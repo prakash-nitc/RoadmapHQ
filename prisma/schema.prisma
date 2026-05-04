@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Patterns ────────────────────────────────────────────────
+model Pattern {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  order       Int      // Display ordering
+  status      String   @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | COMPLETED
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  videos   Video[]
+  problems Problem[]
+  sessions StudySession[]
+  notes    PatternNote?
+}
+
+// ─── Videos (YouTube Playlist) ───────────────────────────────
+model Video {
+  id            String   @id @default(cuid())
+  episodeNumber Int
+  title         String
+  patternId     String
+  duration      String?  // e.g. "19:17"
+  url           String?  // YouTube URL — nullable; UI falls back to search-by-title when missing
+  watched       Boolean  @default(false)
+  watchedAt     DateTime?
+  notes         String?
+
+  pattern Pattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+}
+
+// ─── Problems (Sheet) ────────────────────────────────────────
+model Problem {
+  id            String   @id @default(cuid())
+  title         String
+  patternId     String
+  subPattern    String?  // e.g. "Traversal", "Search", "Kth"
+  difficulty    String?  // EASY | MEDIUM | HARD
+  platform      String   // LEETCODE | GFG | OTHER
+  url           String
+  status        String   @default("NOT_STARTED") // NOT_STARTED | ATTEMPTED | SOLVED | REVISED | MASTERED
+  attempts      Int      @default(0)
+  solvedAt      DateTime?
+  notes         String?
+  revisionLevel Int      @default(0)  // 0–5 (each revision bumps +1)
+  masteryScore  Int      @default(0)  // 0–100
+  isHomework    Boolean  @default(false)
+  isChallenge   Boolean  @default(false)
+
+  pattern   Pattern    @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  revisions Revision[]
+}
+
+// ─── Spaced Repetition Revisions ─────────────────────────────
+model Revision {
+  id             String    @id @default(cuid())
+  problemId      String
+  scheduledDate  DateTime
+  completedDate  DateTime?
+  revisionNumber Int       // 1, 2, 3, 4, 5
+  status         String    @default("PENDING") // PENDING | COMPLETED | SKIPPED
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+}
+
+// ─── Study Sessions (Timer) ─────────────────────────────────
+model StudySession {
+  id           String    @id @default(cuid())
+  startTime    DateTime
+  endTime      DateTime?
+  durationMins Int       @default(0)
+  patternId    String?
+  notes        String?
+
+  pattern Pattern? @relation(fields: [patternId], references: [id])
+}
+
+// ─── Daily Logs ──────────────────────────────────────────────
+model DailyLog {
+  id                 String  @id @default(cuid())
+  date               DateTime @unique
+  targetVideos       Int     @default(2)
+  targetProblems     Int     @default(3)
+  targetStudyMins    Int     @default(120)
+  completedVideos    Int     @default(0)
+  completedProblems  Int     @default(0)
+  completedStudyMins Int     @default(0)
+  missionScore       Float   @default(0)
+  journalEntry       String?
+  isStudyDay         Boolean @default(false)
+}
+
+// ─── Pattern Notes ───────────────────────────────────────────
+model PatternNote {
+  id            String @id @default(cuid())
+  patternId     String @unique
+  keyLearnings  String?
+  mistakes      String?
+  revisionNotes String?
+
+  pattern Pattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+}
+
+// ─── User Settings ───────────────────────────────────────────
+model UserSettings {
+  id                   String    @id @default("default")
+  targetDate           DateTime?
+  dailyTargetVideos    Int       @default(2)
+  dailyTargetProblems  Int       @default(3)
+  dailyTargetStudyMins Int       @default(120)
+  startDate            DateTime  @default(now())
+}
