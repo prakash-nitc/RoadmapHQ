@@ -1,0 +1,104 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Layers,
+  Code2,
+  PlayCircle,
+  RotateCcw,
+  BarChart3,
+  BookOpen,
+  Target,
+  Settings,
+  Rocket,
+} from "lucide-react";
+import { StreakChip } from "./StreakChip";
+
+const primaryNav = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/patterns", label: "Patterns", icon: Layers },
+  { href: "/problems", label: "Problems", icon: Code2 },
+  { href: "/videos", label: "Videos", icon: PlayCircle },
+  { href: "/revisions", label: "Revisions", icon: RotateCcw },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/journal", label: "Journal", icon: BookOpen },
+];
+
+// Secondary nav (settings-style) — kept out of primary list to reduce clutter.
+const secondaryNav = [
+  { href: "/goals", label: "Goals", icon: Target },
+  { href: "/admin", label: "Admin", icon: Settings },
+];
+
+export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
+  const pathname = usePathname();
+
+  const renderLink = (item: (typeof primaryNav)[number]) => {
+    const isActive =
+      item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+    const Icon = item.icon;
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onNavigate}
+        className={`
+          flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+          ${
+            isActive
+              ? "bg-[var(--color-accent-blue-dim)]/50 text-[var(--color-accent-blue)] nav-active"
+              : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card)]"
+          }
+        `}
+      >
+        <Icon className="w-4.5 h-4.5" />
+        {item.label}
+      </Link>
+    );
+  };
+
+  return (
+    <aside className="fixed left-0 top-0 h-full w-64 bg-[var(--color-bg-secondary)] border-r border-[var(--color-border)] flex flex-col">
+      {/* Logo */}
+      <div className="p-5 border-b border-[var(--color-border)]">
+        <Link href="/" onClick={onNavigate} className="flex items-center gap-3 group">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--color-accent-blue)] to-[var(--color-accent-purple)] flex items-center justify-center group-hover:shadow-lg group-hover:shadow-blue-500/20 transition-shadow">
+            <Rocket className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold tracking-tight text-[var(--color-text-primary)]">
+              DSA Mission
+            </h1>
+            <p className="text-[10px] font-medium text-[var(--color-accent-blue)] uppercase tracking-widest">
+              Control
+            </p>
+          </div>
+        </Link>
+      </div>
+
+      {/* Primary navigation */}
+      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+        {primaryNav.map(renderLink)}
+
+        <div className="pt-4 mt-2 border-t border-[var(--color-border-subtle)] space-y-1">
+          <p className="px-3 pb-1 text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+            Settings
+          </p>
+          {secondaryNav.map(renderLink)}
+        </div>
+      </nav>
+
+      {/* Footer */}
+      <div className="p-3 border-t border-[var(--color-border)] space-y-2">
+        <StreakChip />
+        <div className="text-[10px] text-[var(--color-text-muted)] text-center">
+          <span className="font-mono">v0.2.0</span>
+          <span className="mx-1.5">·</span>
+          <span>Prakash</span>
+        </div>
+      </div>
+    </aside>
+  );
+}
