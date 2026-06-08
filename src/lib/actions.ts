@@ -8,6 +8,9 @@ import {
   differenceInDays,
   differenceInCalendarDays,
   format,
+  startOfWeek,
+  endOfWeek,
+  isSunday,
 } from "date-fns";
 
 // ═══════════════════════════════════════════════════════════════
@@ -740,6 +743,193 @@ export async function updateSettings(data: {
 
 export async function getSettings() {
   return prisma.userSettings.findFirst({ where: { id: "default" } });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WEEKLY REVIEW
+// ═══════════════════════════════════════════════════════════════
+
+export async function getWeeklyReview() {
+  const now = new Date();
+  // ISO week: Monday → Sunday
+  const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const thisWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  const lastWeekStart = subDays(thisWeekStart, 7);
+  const lastWeekEnd = subDays(thisWeekStart, 1);
+  const daysIntoWeek = differenceInCalendarDays(now, thisWeekStart) + 1; // 1..7
+  const isWeekEnded = isSunday(now) && differenceInCalendarDays(now, thisWeekStart) === 6;
+
+  const [
+    thisWeekSolves,
+    lastWeekSolves,
+    thisWeekLogs,
+    lastWeekLogs,
+    thisWeekRevisions,
+    settings,
+    patterns,
+    todayLog,
+  ] = await Promise.all([
+    prisma.problem.findMany({
+      where: {
+        solvedAt: { gte: thisWeekStart, lte: thisWeekEnd },
+        status: { in: ["SOLVED", "REVISED", "MASTERED"] },
+      },
+      include: { pattern: true },
+    }),
+    prisma.problem.findMany({
+      where: {
+        solvedAt: { gte: lastWeekStart, lte: lastWeekEnd },
+        status: { in: ["SOLVED", "REVISED", "MASTERED"] },
+      },
+    }),
+    prisma.dailyLog.findMany({
+      where: { date: { gte: thisWeekStart, lte: thisWeekEnd } },
+      orderBy: { date: "asc" },
+    }),
+    prisma.dailyLog.findMany({
+      where: { date: { gte: lastWeekStart, lte: lastWeekEnd } },
+    }),
+    prisma.revision.findMany({
+      where: {
+        completedDate: { gte: thisWeekStart, lte: thisWeekEnd },
+      },
+    }),
+    prisma.userSettings.findFirst({ where: { id: "default" } }),
+    prisma.pattern.findMany({
+      include: { problems: true, videos: true },
+      orderBy: { order: "asc" },
+    }),
+    prisma.dailyLog.findFirst({
+      where: {
+        date: {
+          gte: startOfDay(now),
+          lt: endOfDay(now),
+        },
+      },
+    }),
+  ]);
+
+  const target = settings?.dailyTargetProblems ?? 3;
+
+  // ─── Headline numbers ────────────────────────────────────────
+  const problemsThis = thisWeekSolves.length;
+  const problemsLast = lastWeekSolves.length;
+  const problemsDelta = problemsThis - problemsLast;
+
+  const videosThis = thisWeekLogs.reduce((s, l) => s + l.completedVideos, 0);
+  const videosLast = lastWeekLogs.reduce((s, l) => s + l.completedVideos, 0);
+  const videosDelta = videosThis - videosLast;
+
+  const studyDaysThis = thisWeekLogs.filter((l) => l.isStudyDay).length;
+  const studyDaysLast = lastWeekLogs.filter((l) => l.isStudyDay).length;
+
+  const revisionsCompleted = thisWeekRevisions.filter(
+    (r) => r.status === "COMPLETED"
+  ).length;
+  const revisionsSkipped = thisWeekRevisions.filter(
+    (r) => r.status === "SKIPPED"
+  ).length;
+
+  // Per-day breakdown for the bar chart inside the review
+  const perDayProblems: { date: string; label: string; count: number }[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = subDays(thisWeekEnd, 6 - i);
+    const key = format(d, "yyyy-MM-dd");
+    const log = thisWeekLogs.find((l) => format(l.date, "yyyy-MM-dd") === key);
+    perDayProblems.push({
+      date: key,
+      label: format(d, "EEE"),
+      count: log?.completedProblems ?? 0,
+    });
+  }
+  const bestDay = perDayProblems.reduce(
+    (best, d) => (d.count > best.count ? d : best),
+    { date: "", label: "—", count: 0 }
+  );
+
+  // ─── Pattern movement ────────────────────────────────────────
+  // Count solves per pattern this week.
+  const patternMovement = new Map<string, { id: string; name: string; count: number }>();
+  thisWeekSolves.forEach((s) => {
+    const k = s.pattern.id;
+    const cur = patternMovement.get(k) ?? {
+      id: s.pattern.id,
+      name: s.pattern.name,
+      count: 0,
+    };
+    cur.count++;
+    patternMovement.set(k, cur);
+  });
+  const topPattern =
+    [...patternMovement.values()].sort((a, b) => b.count - a.count)[0] ?? null;
+
+  // ─── Weakest patterns to focus next week ─────────────────────
+  const patternStats = patterns
+    .map((p) => {
+      const total = p.problems.length;
+      const solved = p.problems.filter((pr) =>
+        ["SOLVED", "REVISED", "MASTERED"].includes(pr.status)
+      ).length;
+      const avgMastery =
+        total > 0
+          ? Math.round(
+              p.problems.reduce((s, pr) => s + pr.masteryScore, 0) / total
+            )
+          : 0;
+      return { id: p.id, name: p.name, mastery: avgMastery, solved, total };
+    })
+    .filter((p) => p.total > 0);
+  const weakest = [...patternStats]
+    .sort((a, b) => a.mastery - b.mastery)
+    .slice(0, 3);
+
+  // ─── Difficulty mix this week ────────────────────────────────
+  const difficultyThis = { EASY: 0, MEDIUM: 0, HARD: 0 };
+  thisWeekSolves.forEach((s) => {
+    const d = (s.difficulty ?? "") as keyof typeof difficultyThis;
+    if (d in difficultyThis) difficultyThis[d]++;
+  });
+
+  // ─── Pace context ────────────────────────────────────────────
+  const avgPerDay = +(problemsThis / Math.max(daysIntoWeek, 1)).toFixed(1);
+  const hitTargetDays = thisWeekLogs.filter(
+    (l) => l.completedProblems >= target
+  ).length;
+  const goalPctThisWeek = Math.round((problemsThis / (target * 7)) * 100);
+
+  return {
+    thisWeekStart: format(thisWeekStart, "MMM d"),
+    thisWeekEnd: format(thisWeekEnd, "MMM d"),
+    isWeekEnded,
+    daysIntoWeek,
+    target,
+
+    problemsThis,
+    problemsLast,
+    problemsDelta,
+    videosThis,
+    videosLast,
+    videosDelta,
+    studyDaysThis,
+    studyDaysLast,
+
+    revisionsCompleted,
+    revisionsSkipped,
+
+    perDayProblems,
+    bestDay,
+    topPattern,
+    weakest,
+    difficultyThis,
+
+    avgPerDay,
+    hitTargetDays,
+    goalPctThisWeek,
+
+    targetProblems: target,
+    todayMissionComplete:
+      (todayLog?.completedProblems ?? 0) >= target,
+  };
 }
 
 // Lightweight streak query for the sidebar chip — avoids loading full dashboard.

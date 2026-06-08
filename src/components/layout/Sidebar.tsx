@@ -9,6 +9,7 @@ import {
   PlayCircle,
   RotateCcw,
   BarChart3,
+  CalendarCheck,
   BookOpen,
   Target,
   Settings,
@@ -23,6 +24,7 @@ const primaryNav = [
   { href: "/videos", label: "Videos", icon: PlayCircle },
   { href: "/revisions", label: "Revisions", icon: RotateCcw },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/review", label: "Weekly review", icon: CalendarCheck },
   { href: "/journal", label: "Journal", icon: BookOpen },
 ];
 

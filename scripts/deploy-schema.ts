@@ -9,7 +9,8 @@
  * Idempotent — re-running on a populated DB is a no-op (statements use IF NOT EXISTS where possible).
  */
 
-import { execSync } from "child_process";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { createClient } from "@libsql/client";
 
 async function main() {
@@ -17,17 +18,20 @@ async function main() {
   const tursoToken = process.env.TURSO_AUTH_TOKEN;
   if (!tursoUrl) throw new Error("TURSO_DATABASE_URL is required");
 
-  console.log("📐 Generating schema SQL from prisma/schema.prisma...");
-  const sql = execSync(
-    "npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script",
-    { encoding: "utf-8" }
-  );
+  console.log("📐 Reading schema SQL from scripts/schema.sql...");
+  console.log("   (Regenerate via: npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > scripts/schema.sql)");
+  const sql = readFileSync(join(__dirname, "schema.sql"), "utf-8");
 
-  // Filter out comments, split on semicolons.
-  const statements = sql
-    .split(/;\s*$/m)
+  // Strip SQL comments first (each statement is preceded by "-- CreateTable"),
+  // then split on semicolons.
+  const stripped = sql
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("--"))
+    .join("\n");
+  const statements = stripped
+    .split(";")
     .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith("--"));
+    .filter((s) => s.length > 0);
 
   console.log(`📡 Connecting to Turso...`);
   const client = createClient({ url: tursoUrl, authToken: tursoToken });

@@ -10,6 +10,7 @@ import { MissedDayCard } from "@/components/dashboard/MissedDayCard";
 import { ComebackCard } from "@/components/dashboard/ComebackCard";
 import { TomorrowPreview } from "@/components/dashboard/TomorrowPreview";
 import { DailyCelebration } from "@/components/dashboard/DailyCelebration";
+import { WeeklyReviewBanner } from "@/components/dashboard/WeeklyReviewBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,9 @@ export default async function Dashboard() {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Confetti / quote toast — one-shot per day, fires on full completion */}
       <DailyCelebration missionComplete={data.missionComplete} />
+
+      {/* Sunday-only review banner — dismissible per week */}
+      <WeeklyReviewBanner />
 
       {/* Comeback flow takes priority if you've been away */}
       <ComebackCard
