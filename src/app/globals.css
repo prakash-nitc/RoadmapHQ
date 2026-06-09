@@ -292,7 +292,12 @@ body {
 }
 @media (min-width: 768px) {
   .app-main-padding {
-    padding: 32px;
+    padding: 40px 40px 56px;
+  }
+}
+@media (min-width: 1280px) {
+  .app-main-padding {
+    padding: 48px 56px 72px;
   }
 }
 

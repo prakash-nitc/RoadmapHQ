@@ -70,7 +70,7 @@ export function AnalyticsClient({ data }: { data: AnalyticsData }) {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
       <div>
         <p className="text-sm text-[var(--color-text-secondary)] flex items-center gap-1.5 mb-1">
@@ -122,7 +122,7 @@ export function AnalyticsClient({ data }: { data: AnalyticsData }) {
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
         {/* Problems per day — 30d (2 cols on lg) */}
         <div className="section-card p-5 lg:col-span-2 flex flex-col">
           <div className="flex items-start justify-between gap-3 mb-4">

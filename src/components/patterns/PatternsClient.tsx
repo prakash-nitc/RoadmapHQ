@@ -60,7 +60,7 @@ export function PatternsClient({
   }, [patterns, filter, search]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div>
@@ -144,7 +144,7 @@ export function PatternsClient({
       </div>
 
       {/* Pattern grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filtered.map((p) => (
           <PatternCard key={p.id} pattern={p} />
         ))}

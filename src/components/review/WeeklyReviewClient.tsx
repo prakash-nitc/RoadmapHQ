@@ -51,7 +51,7 @@ export function WeeklyReviewClient({ data }: { data: ReviewData }) {
   const onPace = data.problemsThis >= data.targetProblems * data.daysIntoWeek;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-8">
       {/* Header */}
       <div>
         <p className="text-sm text-[var(--color-text-secondary)] flex items-center gap-1.5 mb-1">

@@ -43,7 +43,7 @@ export function MissionBriefing(props: MissionBriefingProps) {
   const remaining = Math.max(totalProblems - solvedProblems, 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Hero panel */}
       <div className="briefing-hero relative overflow-hidden rounded-2xl">
         {/* Decorative gradient orbs */}

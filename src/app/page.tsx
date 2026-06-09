@@ -28,7 +28,7 @@ export default async function Dashboard() {
   const data = await getDashboardData();
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-8">
       {/* Confetti / quote toast — one-shot per day, fires on full completion */}
       <DailyCelebration missionComplete={data.missionComplete} />
 
@@ -93,7 +93,7 @@ export default async function Dashboard() {
 
       {/* Combined Today's mission + Study activity card | Revision engine.
           items-stretch so the right card matches the (taller) left card height. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
         <div className="lg:col-span-2 section-card flex flex-col">
           <DailyMission
             nextVideo={data.nextVideo}
