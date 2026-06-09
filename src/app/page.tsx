@@ -102,7 +102,7 @@ export default async function Dashboard() {
             revisionsDone={data.todayRevisionsCompleted}
             embedded
           />
-          <div className="h-px bg-[var(--color-border-subtle)] mx-5" />
+          <div className="h-px bg-[var(--color-border-subtle)] mx-6 my-2" />
           <GitHubHeatmap data={data.heatmapData} embedded />
         </div>
 

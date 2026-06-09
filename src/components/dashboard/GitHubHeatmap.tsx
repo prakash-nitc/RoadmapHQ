@@ -71,13 +71,13 @@ export function GitHubHeatmap({
   const totalStudyDays = data.filter((d) => d.isStudyDay).length;
 
   return (
-    <div className={embedded ? "p-5" : "section-card p-5 h-full"}>
-      <div className="flex items-center justify-between mb-4">
+    <div className={embedded ? "p-6 pt-7" : "section-card p-6 h-full"}>
+      <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
             Study activity
           </h2>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+          <p className="text-xs text-[var(--color-text-muted)] mt-1">
             <span className="font-bold text-[var(--color-accent-emerald)]">{totalStudyDays}</span> study days · last 365 days
           </p>
         </div>

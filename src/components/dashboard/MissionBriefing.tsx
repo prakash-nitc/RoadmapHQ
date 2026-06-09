@@ -50,9 +50,9 @@ export function MissionBriefing(props: MissionBriefingProps) {
         <div className="briefing-orb briefing-orb-1" aria-hidden />
         <div className="briefing-orb briefing-orb-2" aria-hidden />
 
-        <div className="relative p-6 md:p-8">
+        <div className="relative p-7 md:p-10">
           {/* Top row: greeting + date */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-10">
             <div>
               <p className="text-sm text-[var(--color-text-secondary)] flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5 text-[var(--color-accent-amber)]" />
@@ -79,7 +79,7 @@ export function MissionBriefing(props: MissionBriefingProps) {
 
           {/* Center: ring + 3 headline stat cards.
               items-stretch + h-full on cards ensures cards match ring height. */}
-          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1fr_1fr] gap-4 md:gap-5 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1fr_1fr] gap-5 md:gap-6 items-stretch">
             <div className="flex justify-center md:justify-start items-center md:px-2">
               <ReadinessRing
                 percent={overallReadiness}
@@ -306,9 +306,9 @@ function FooterChip({
   href?: string;
 }) {
   const inner = (
-    <div className="section-card p-5 flex items-center gap-4 hover:bg-[var(--color-bg-card-hover)] transition-colors h-full">
+    <div className="section-card p-6 flex items-center gap-4 hover:bg-[var(--color-bg-card-hover)] transition-colors h-full">
       <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
         style={{ backgroundColor: color + "22" }}
       >
         <Icon className="w-5 h-5" style={{ color }} />
@@ -318,13 +318,13 @@ function FooterChip({
           {label}
         </div>
         <div
-          className="text-lg font-bold font-mono truncate mt-1"
+          className="text-lg font-bold font-mono truncate mt-1.5"
           style={{ color }}
           title={value}
         >
           {value}
         </div>
-        <div className="text-[10px] text-[var(--color-text-muted)] truncate mt-0.5">
+        <div className="text-[10px] text-[var(--color-text-muted)] truncate mt-1">
           {subtext}
         </div>
       </div>

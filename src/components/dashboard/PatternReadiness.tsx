@@ -32,13 +32,13 @@ export function PatternReadiness({ patterns }: { patterns: PatternReadinessItem[
   };
 
   return (
-    <div className="section-card p-5">
-      <div className="flex items-start justify-between mb-4">
+    <div className="section-card p-6">
+      <div className="flex items-start justify-between mb-6">
         <div>
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
             Placement readiness tracker
           </h2>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+          <p className="text-xs text-[var(--color-text-muted)] mt-1">
             Per-pattern completion across videos and problems.
           </p>
         </div>
@@ -50,7 +50,7 @@ export function PatternReadiness({ patterns }: { patterns: PatternReadinessItem[
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3.5">
         {patterns.map((p) => {
           const barColor = getBarColor(p.completion);
 
@@ -58,7 +58,7 @@ export function PatternReadiness({ patterns }: { patterns: PatternReadinessItem[
             <Link
               key={p.id}
               href={`/patterns/${p.id}`}
-              className="group flex items-center gap-3 py-1.5 -mx-2 px-2 rounded-md hover:bg-[var(--color-bg-card-hover)]/50 transition-colors"
+              className="group flex items-center gap-3 py-2 -mx-2 px-2 rounded-md hover:bg-[var(--color-bg-card-hover)]/50 transition-colors"
             >
               {/* Status dot */}
               <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${getStatusDot(p.status)}`} />
