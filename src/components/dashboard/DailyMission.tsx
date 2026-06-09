@@ -124,12 +124,12 @@ export function DailyMission({
 
   return (
     <div className={embedded ? "" : "section-card overflow-hidden"}>
-      <div className="px-6 pt-6 pb-5 flex items-start justify-between gap-3">
+      <div className="px-7 pt-7 pb-6 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
             Today&apos;s mission
           </h2>
-          <p className="text-xs text-[var(--color-text-muted)] mt-1">
+          <p className="text-xs text-[var(--color-text-muted)] mt-1.5">
             Knock these out — that&apos;s the day won.
           </p>
         </div>
@@ -138,7 +138,7 @@ export function DailyMission({
         </span>
       </div>
 
-      <div className="px-6 pb-7 space-y-5">
+      <div className="px-7 pb-8 space-y-7">
         {tasks.map((t) => {
           const pct = Math.min((t.done / Math.max(t.target, 1)) * 100, 100);
           const isDone = t.done >= t.target;

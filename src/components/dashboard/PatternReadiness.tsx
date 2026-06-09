@@ -32,13 +32,13 @@ export function PatternReadiness({ patterns }: { patterns: PatternReadinessItem[
   };
 
   return (
-    <div className="section-card p-6">
-      <div className="flex items-start justify-between mb-6">
+    <div className="section-card p-7">
+      <div className="flex items-start justify-between mb-7">
         <div>
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
             Placement readiness tracker
           </h2>
-          <p className="text-xs text-[var(--color-text-muted)] mt-1">
+          <p className="text-xs text-[var(--color-text-muted)] mt-1.5">
             Per-pattern completion across videos and problems.
           </p>
         </div>
@@ -50,7 +50,7 @@ export function PatternReadiness({ patterns }: { patterns: PatternReadinessItem[
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3.5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5">
         {patterns.map((p) => {
           const barColor = getBarColor(p.completion);
 

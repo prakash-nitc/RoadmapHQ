@@ -32,13 +32,13 @@ export function RevisionQueue({ revisions }: { revisions: Revision[] }) {
   };
 
   return (
-    <div className="section-card p-6 flex flex-col w-full min-h-[380px]">
-      <div className="flex items-start justify-between gap-3 mb-5">
+    <div className="section-card p-7 flex flex-col w-full min-h-[420px]">
+      <div className="flex items-start justify-between gap-3 mb-7">
         <div className="min-w-0">
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
             Revision engine
           </h2>
-          <p className="text-xs text-[var(--color-text-muted)] mt-1">
+          <p className="text-xs text-[var(--color-text-muted)] mt-1.5">
             Spaced repetition keeps mastery from decaying.
           </p>
         </div>
@@ -63,11 +63,11 @@ export function RevisionQueue({ revisions }: { revisions: Revision[] }) {
           </p>
         </div>
       ) : (
-        <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1 -mr-1">
+        <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1 -mr-1">
           {revisions.map((rev) => (
             <div
               key={rev.id}
-              className="flex items-center gap-3 p-3.5 rounded-lg bg-[var(--color-bg-primary)] border border-[var(--color-border-subtle)] group hover:border-[var(--color-accent-amber)] transition-colors"
+              className="flex items-center gap-3 p-4 rounded-lg bg-[var(--color-bg-primary)] border border-[var(--color-border-subtle)] group hover:border-[var(--color-accent-amber)] transition-colors"
             >
               <div className="w-7 h-7 rounded-md bg-[var(--color-accent-amber-dim)] flex items-center justify-center shrink-0">
                 <RotateCcw className="w-3.5 h-3.5 text-[var(--color-accent-amber)]" />

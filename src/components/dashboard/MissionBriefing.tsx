@@ -43,16 +43,16 @@ export function MissionBriefing(props: MissionBriefingProps) {
   const remaining = Math.max(totalProblems - solvedProblems, 0);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-7">
       {/* Hero panel */}
       <div className="briefing-hero relative overflow-hidden rounded-2xl">
         {/* Decorative gradient orbs */}
         <div className="briefing-orb briefing-orb-1" aria-hidden />
         <div className="briefing-orb briefing-orb-2" aria-hidden />
 
-        <div className="relative p-7 md:p-10">
+        <div className="relative p-8 md:p-12">
           {/* Top row: greeting + date */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-10">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-12">
             <div>
               <p className="text-sm text-[var(--color-text-secondary)] flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5 text-[var(--color-accent-amber)]" />
@@ -79,7 +79,7 @@ export function MissionBriefing(props: MissionBriefingProps) {
 
           {/* Center: ring + 3 headline stat cards.
               items-stretch + h-full on cards ensures cards match ring height. */}
-          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1fr_1fr] gap-5 md:gap-6 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1fr_1fr] gap-6 md:gap-8 items-stretch">
             <div className="flex justify-center md:justify-start items-center md:px-2">
               <ReadinessRing
                 percent={overallReadiness}
@@ -245,7 +245,7 @@ function HeadlineStat({
 
   return (
     <div
-      className="rounded-2xl p-5 flex flex-col h-full min-h-[140px]"
+      className="rounded-2xl p-6 flex flex-col h-full min-h-[160px]"
       style={{
         background: "var(--color-bg-card)",
         border: "1px solid var(--color-border-subtle)",
@@ -255,7 +255,7 @@ function HeadlineStat({
         <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)] font-semibold leading-relaxed">
           {label}
         </div>
-        <div className="flex items-baseline gap-1.5 mt-3">
+        <div className="flex items-baseline gap-1.5 mt-4">
           <span
             className="text-3xl md:text-4xl font-bold font-mono leading-none stat-value"
             style={{ color }}
@@ -276,7 +276,7 @@ function HeadlineStat({
       </div>
 
       {/* In-flow progress bar — not absolute, so border-radius can't clip it */}
-      <div className="mt-4 h-1 rounded-full bg-[var(--color-bg-primary)] overflow-hidden">
+      <div className="mt-5 h-1 rounded-full bg-[var(--color-bg-primary)] overflow-hidden">
         <div
           className="h-full rounded-full progress-bar-fill"
           style={{
