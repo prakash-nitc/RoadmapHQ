@@ -1179,9 +1179,9 @@ export async function getVideos() {
 // PLACEMENT COUNTDOWN
 // ═══════════════════════════════════════════════════════════════
 
-// Industry-baseline number of problems considered interview-ready.
-// Tunable later if we expose it in settings.
-const PLACEMENT_BASELINE = 150;
+// Number of problems considered interview-ready for placement.
+// 250 = aspirational MAANG-tier target; tweak here if your goal changes.
+const PLACEMENT_BASELINE = 250;
 
 export interface PlacementCountdown {
   daysRemaining: number | null;
