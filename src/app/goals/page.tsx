@@ -15,6 +15,7 @@ import {
   updateSettings,
   getDashboardData,
 } from "@/lib/actions";
+import { RealityCheck } from "@/components/goals/RealityCheck";
 
 export default function GoalsPage() {
   const [targetDate, setTargetDate] = useState("");
@@ -30,6 +31,16 @@ export default function GoalsPage() {
     projectedDate: string;
     paceOnlyDate: string | null;
     paceWindow: number;
+    targetPerDay: number;
+    placementCountdown: {
+      daysRemaining: number | null;
+      isSet: boolean;
+      baseline: number;
+      projectedAtCurrentPace: number;
+      projectedAtTargetPace: number;
+      neededPerDay: number;
+      verdict: "on-track" | "hit-target" | "behind" | "no-date";
+    };
   } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
@@ -61,6 +72,8 @@ export default function GoalsPage() {
       projectedDate: dash.projectedDate,
       paceOnlyDate: dash.paceOnlyDate,
       paceWindow: dash.paceWindow,
+      targetPerDay: dash.targetPerDay,
+      placementCountdown: dash.placementCountdown,
     });
   }
 
@@ -191,6 +204,22 @@ export default function GoalsPage() {
         </div>
       )}
 
+      {/* Reality check — placement-date-driven verdict */}
+      {dashData && (
+        <RealityCheck
+          daysRemaining={dashData.placementCountdown.daysRemaining ?? 0}
+          baseline={dashData.placementCountdown.baseline}
+          solvedProblems={dashData.solvedProblems}
+          totalProblems={dashData.totalProblems}
+          problemsPerDay={dashData.problemsPerDay}
+          targetPerDay={dashData.targetPerDay}
+          projectedAtCurrentPace={dashData.placementCountdown.projectedAtCurrentPace}
+          projectedAtTargetPace={dashData.placementCountdown.projectedAtTargetPace}
+          neededPerDay={dashData.placementCountdown.neededPerDay}
+          verdict={dashData.placementCountdown.verdict}
+        />
+      )}
+
       {/* Target verdict */}
       {daysUntilTarget && requiredProblemsPerDay && requiredVideosPerDay && verdict && (
         <VerdictPanel
@@ -215,7 +244,7 @@ export default function GoalsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Target completion date">
+          <Field label="Placement date">
             <input
               type="date"
               value={targetDate}

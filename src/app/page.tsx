@@ -11,6 +11,7 @@ import { ComebackCard } from "@/components/dashboard/ComebackCard";
 import { TomorrowPreview } from "@/components/dashboard/TomorrowPreview";
 import { DailyCelebration } from "@/components/dashboard/DailyCelebration";
 import { WeeklyReviewBanner } from "@/components/dashboard/WeeklyReviewBanner";
+import { PlacementCountdown } from "@/components/dashboard/PlacementCountdown";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,13 @@ export default async function Dashboard() {
 
       {/* Sunday-only review banner — dismissible per week */}
       <WeeklyReviewBanner />
+
+      {/* Placement countdown — always visible, color tier escalates as days drop */}
+      <PlacementCountdown
+        {...data.placementCountdown}
+        problemsPerDay={data.problemsPerDay}
+        targetPerDay={data.targetPerDay}
+      />
 
       {/* Comeback flow takes priority if you've been away */}
       <ComebackCard

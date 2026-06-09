@@ -289,6 +289,13 @@ export async function getDashboardData() {
     targetDate: settings?.targetDate
       ? format(settings.targetDate, "MMM dd, yyyy")
       : null,
+    placementCountdown: buildPlacementCountdown({
+      targetDate: settings?.targetDate ?? null,
+      solvedProblems,
+      totalProblems,
+      problemsPerDay,
+      targetPerDay: settings?.dailyTargetProblems ?? 0,
+    }),
     todayRevisionsCompleted,
     todayRevisionsDueTotal,
     lastStudyDayISO,
@@ -1166,6 +1173,83 @@ export async function getVideos() {
     include: { pattern: true },
     orderBy: { episodeNumber: "asc" },
   });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PLACEMENT COUNTDOWN
+// ═══════════════════════════════════════════════════════════════
+
+// Industry-baseline number of problems considered interview-ready.
+// Tunable later if we expose it in settings.
+const PLACEMENT_BASELINE = 150;
+
+export interface PlacementCountdown {
+  daysRemaining: number | null;
+  isSet: boolean;
+  baseline: number;
+  // At current observed pace
+  projectedAtCurrentPace: number;
+  // At user's daily target
+  projectedAtTargetPace: number;
+  // Needed daily pace to reach baseline
+  neededPerDay: number;
+  // Which scenario verdict applies
+  verdict: "on-track" | "hit-target" | "behind" | "no-date";
+}
+
+function buildPlacementCountdown(input: {
+  targetDate: Date | null;
+  solvedProblems: number;
+  totalProblems: number;
+  problemsPerDay: number;
+  targetPerDay: number;
+}): PlacementCountdown {
+  const baseline = Math.min(PLACEMENT_BASELINE, input.totalProblems);
+
+  if (!input.targetDate) {
+    return {
+      daysRemaining: null,
+      isSet: false,
+      baseline,
+      projectedAtCurrentPace: input.solvedProblems,
+      projectedAtTargetPace: input.solvedProblems,
+      neededPerDay: 0,
+      verdict: "no-date",
+    };
+  }
+
+  const today = startOfDay(new Date());
+  const daysRemaining = Math.max(
+    0,
+    differenceInCalendarDays(input.targetDate, today)
+  );
+  const projectedAtCurrentPace =
+    input.solvedProblems +
+    Math.round(input.problemsPerDay * daysRemaining);
+  const projectedAtTargetPace =
+    input.solvedProblems + input.targetPerDay * daysRemaining;
+  const remaining = Math.max(0, baseline - input.solvedProblems);
+  const neededPerDay =
+    daysRemaining > 0
+      ? Math.round((remaining / daysRemaining) * 10) / 10
+      : remaining;
+
+  const verdict: PlacementCountdown["verdict"] =
+    projectedAtCurrentPace >= baseline
+      ? "on-track"
+      : projectedAtTargetPace >= baseline
+      ? "hit-target"
+      : "behind";
+
+  return {
+    daysRemaining,
+    isSet: true,
+    baseline,
+    projectedAtCurrentPace,
+    projectedAtTargetPace,
+    neededPerDay,
+    verdict,
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════
