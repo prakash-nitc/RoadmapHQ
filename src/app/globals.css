@@ -49,11 +49,15 @@
   box-sizing: border-box;
 }
 
-html, body {
+/* Canvas color lives on html ONLY. body must stay transparent —
+   an opaque body background paints over negative z-index layers,
+   which would hide the aurora backdrop. */
+html {
   background-color: var(--color-bg-primary);
 }
 
 body {
+  background: transparent;
   font-family: var(--font-sans);
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
@@ -100,7 +104,7 @@ body {
   position: absolute;
   border-radius: 9999px;
   filter: blur(110px);
-  opacity: 0.55;
+  opacity: 0.75;
   will-change: transform;
 }
 .aurora-blob-1 {
