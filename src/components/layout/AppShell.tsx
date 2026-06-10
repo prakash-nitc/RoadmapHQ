@@ -6,9 +6,26 @@ import { Menu, Rocket } from "lucide-react";
 import Link from "next/link";
 import { Sidebar } from "./Sidebar";
 
+const COLLAPSE_KEY = "dsa-sidebar-collapsed";
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+
+  // Restore collapse preference after mount (avoids SSR mismatch).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      window.localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+      return next;
+    });
+  };
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -23,9 +40,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/* Ambient aurora — colorful blobs the glass cards blur over */}
+      <div className="aurora-bg" aria-hidden>
+        <div className="aurora-blob aurora-blob-1" />
+        <div className="aurora-blob aurora-blob-2" />
+        <div className="aurora-blob aurora-blob-3" />
+        <div className="aurora-blob aurora-blob-4" />
+      </div>
+
       {/* Desktop sidebar — visible above 768px via .app-sidebar-desktop */}
-      <div className="app-sidebar-desktop app-sidebar-fixed">
-        <Sidebar />
+      <div className="app-sidebar-desktop">
+        <div className={`app-sidebar-fixed ${collapsed ? "sidebar-collapsed" : ""}`}>
+          <Sidebar collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
+        </div>
       </div>
 
       {/* Mobile drawer — only rendered/visible below 768px */}
@@ -42,9 +69,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Main content wrapper — padded left on desktop via .app-main-wrapper */}
+      {/* Main content wrapper — padding adjusts when sidebar collapses */}
       <div
-        className="app-main-wrapper"
+        className={`app-main-wrapper ${collapsed ? "sidebar-collapsed" : ""}`}
         style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
       >
         {/* Mobile top bar — hidden on desktop via .app-mobile-header */}
@@ -56,7 +83,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             padding: "0 16px",
             height: "56px",
             borderBottom: "1px solid var(--color-border)",
-            background: "var(--color-bg-secondary)",
+            background: "rgba(16, 16, 25, 0.75)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
             position: "sticky",
             top: 0,
             zIndex: 30,

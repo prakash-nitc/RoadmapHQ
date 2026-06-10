@@ -86,24 +86,90 @@ body {
 }
 .card-glow:hover::before { opacity: 0.6; }
 
+/* ─── Ambient aurora backdrop ───────────────────────────────── */
+/* Fixed, sits behind everything. Gives the glass cards something
+   colorful to blur. Slow drift keeps it alive without distracting. */
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aurora-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(110px);
+  opacity: 0.55;
+  will-change: transform;
+}
+.aurora-blob-1 {
+  width: 560px;
+  height: 560px;
+  top: -180px;
+  left: 12%;
+  background: radial-gradient(circle, rgba(79, 140, 255, 0.32), transparent 70%);
+  animation: aurora-drift-1 26s ease-in-out infinite;
+}
+.aurora-blob-2 {
+  width: 640px;
+  height: 640px;
+  bottom: -240px;
+  right: -120px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.26), transparent 70%);
+  animation: aurora-drift-2 32s ease-in-out infinite;
+}
+.aurora-blob-3 {
+  width: 420px;
+  height: 420px;
+  top: 38%;
+  left: -140px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.18), transparent 70%);
+  animation: aurora-drift-3 38s ease-in-out infinite;
+}
+.aurora-blob-4 {
+  width: 380px;
+  height: 380px;
+  top: 12%;
+  right: 18%;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.16), transparent 70%);
+  animation: aurora-drift-1 30s ease-in-out infinite reverse;
+}
+@keyframes aurora-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(60px, 40px) scale(1.08); }
+}
+@keyframes aurora-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-70px, -50px) scale(1.05); }
+}
+@keyframes aurora-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, -60px) scale(1.1); }
+}
+
 /* Hero panel — primary surface for the "Today" widget */
 .hero-panel {
   background:
     radial-gradient(at top left, rgba(79, 140, 255, 0.08), transparent 60%),
     radial-gradient(at bottom right, rgba(168, 85, 247, 0.06), transparent 60%),
-    var(--color-bg-card);
-  border: 1px solid var(--color-border);
+    rgba(22, 22, 31, 0.55);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 16px;
 }
 
-/* Mission briefing — the big dashboard hero */
+/* Mission briefing — the big dashboard hero (glass) */
 .briefing-hero {
   background:
-    linear-gradient(135deg, rgba(79, 140, 255, 0.05) 0%, transparent 50%, rgba(16, 185, 129, 0.04) 100%),
-    linear-gradient(180deg, #15151f 0%, #101019 100%);
-  border: 1px solid var(--color-border);
+    linear-gradient(135deg, rgba(79, 140, 255, 0.07) 0%, transparent 50%, rgba(16, 185, 129, 0.05) 100%),
+    rgba(20, 20, 30, 0.5);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
     0 20px 60px -20px rgba(0, 0, 0, 0.5);
 }
 .briefing-orb {
@@ -134,11 +200,20 @@ body {
   50% { transform: translate(20px, -20px); }
 }
 
-/* Section card — secondary surfaces */
+/* Section card — secondary surfaces (glassmorphism) */
 .section-card {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
+  background: rgba(22, 22, 31, 0.5);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 32px -12px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.section-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Animated progress bar fill */
@@ -272,6 +347,10 @@ body {
   }
   .app-main-wrapper {
     padding-left: 256px;
+    transition: padding-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .app-main-wrapper.sidebar-collapsed {
+    padding-left: 76px;
   }
   .app-mobile-drawer-root {
     display: none;
@@ -285,6 +364,18 @@ body {
   height: 100vh;
   width: 256px;
   z-index: 40;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.app-sidebar-fixed.sidebar-collapsed {
+  width: 76px;
+}
+
+/* Glass sidebar surface */
+.sidebar-glass {
+  background: rgba(16, 16, 25, 0.65);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .app-main-padding {
@@ -314,6 +405,7 @@ body {
   left: 0;
   top: 0;
   height: 100vh;
+  width: 256px;
   z-index: 60;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
