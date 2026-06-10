@@ -484,10 +484,13 @@ export async function updateProblemStatus(
   const wasSolved = ["SOLVED", "REVISED", "MASTERED"].includes(problem.status);
   const isSolved = ["SOLVED", "REVISED", "MASTERED"].includes(status);
 
-  const updateData: Record<string, unknown> = {
-    status,
-    attempts: { increment: 1 },
-  };
+  const updateData: Record<string, unknown> = { status };
+
+  // Attempts only count real attempts: marking ATTEMPTED, or a first solve.
+  // Toggling the dropdown back and forth shouldn't inflate the counter.
+  if (status === "ATTEMPTED" || (status === "SOLVED" && !wasSolved)) {
+    updateData.attempts = { increment: 1 };
+  }
 
   if (status === "SOLVED" && !wasSolved) {
     updateData.solvedAt = new Date();
@@ -504,14 +507,27 @@ export async function updateProblemStatus(
     });
   }
 
+  // Un-solving: reset everything the solve granted, otherwise mastery,
+  // the revision queue, and today's count all keep stale data.
+  if (wasSolved && !isSolved) {
+    updateData.solvedAt = null;
+    updateData.revisionLevel = 0;
+    updateData.masteryScore = 0;
+    await prisma.revision.deleteMany({
+      where: { problemId, status: "PENDING" },
+    });
+  }
+
   await prisma.problem.update({
     where: { id: problemId },
     data: updateData,
   });
 
-  // Update daily log
+  // Update daily log — both directions
   if (!wasSolved && isSolved) {
     await updateTodayLog("problem", 1);
+  } else if (wasSolved && !isSolved) {
+    await updateTodayLog("problem", -1);
   }
   await maybeCompletePattern(problem.patternId);
 }
@@ -565,9 +581,11 @@ export async function completeRevision(revisionId: string) {
 }
 
 export async function skipRevision(revisionId: string) {
+  // completedDate doubles as "actioned date" — without it, skipped revisions
+  // are invisible to the weekly review and show no date in history.
   await prisma.revision.update({
     where: { id: revisionId },
-    data: { status: "SKIPPED" },
+    data: { status: "SKIPPED", completedDate: new Date() },
   });
 }
 

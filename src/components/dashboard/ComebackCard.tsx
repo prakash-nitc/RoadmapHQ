@@ -13,9 +13,10 @@ export function ComebackCard({
   longestStreak,
   lastStudyDayISO,
 }: ComebackCardProps) {
-  // Show only after a break of 2+ days with no current streak.
+  // Shows after a 3+ day gap; a single missed day (gap of exactly 2) is
+  // handled by MissedDayCard so the two never overlap.
   if (currentStreak > 0) return null;
-  if (daysSinceLastStudy === null || daysSinceLastStudy < 2) return null;
+  if (daysSinceLastStudy === null || daysSinceLastStudy < 3) return null;
 
   const formattedLast = lastStudyDayISO
     ? new Date(lastStudyDayISO).toLocaleDateString(undefined, {

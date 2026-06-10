@@ -11,18 +11,13 @@ interface MissedDayCardProps {
 export function MissedDayCard(props: MissedDayCardProps) {
   const { daysSinceLastStudy, currentStreak, problemsPerDay, targetProblems } = props;
 
-  // Show only when yesterday was missed (no study day). If user has never
-  // studied (null) or is mid-streak (daysSinceLastStudy === 0), skip.
+  // Shows exactly when "you missed yesterday": the streak grace period means
+  // daysSinceLastStudy === 1 always implies a live streak, so the first real
+  // miss surfaces at daysSinceLastStudy === 2. Longer gaps → ComebackCard.
   if (daysSinceLastStudy === null) return null;
-  if (daysSinceLastStudy === 0) return null;
+  if (currentStreak > 0) return null;
+  if (daysSinceLastStudy !== 2) return null;
 
-  // If they were on a streak that just broke, ComebackCard handles it.
-  if (currentStreak === 0 && daysSinceLastStudy >= 2) return null;
-
-  // One day missed mid-streak: a yellow nudge.
-  if (currentStreak > 0) return null; // already on a fresh streak — nothing missed
-
-  // For the (rare) case currentStreak === 0 but daysSinceLastStudy === 1
   const slipDays = Math.max(
     1,
     Math.round((targetProblems || 1) / Math.max(problemsPerDay, 0.5))

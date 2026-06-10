@@ -59,7 +59,7 @@ export function MissionBriefing(props: MissionBriefingProps) {
                 {greeting}, Prakash
               </p>
               <h1 className="text-3xl md:text-5xl font-bold tracking-tight mt-1 leading-tight">
-                <span className="bg-gradient-to-r from-[#f472b6] via-[#a855f7] to-[#4f8cff] bg-clip-text text-transparent">
+                <span className="gradient-text-animate bg-gradient-to-r from-[#f472b6] via-[#a855f7] via-[#4f8cff] to-[#f472b6] bg-clip-text text-transparent">
                   Day {dayNumber}
                 </span>{" "}
                 <span className="text-[var(--color-text-primary)]">

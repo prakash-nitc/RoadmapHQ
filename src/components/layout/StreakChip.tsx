@@ -107,7 +107,7 @@ export function StreakChip() {
               "0 0 16px rgba(245, 158, 11, 0.85), 0 0 4px rgba(255, 255, 255, 0.3) inset",
           }}
         >
-          <Icon className="w-4.5 h-4.5 text-white" />
+          <Icon className="w-4.5 h-4.5 text-white flame-flicker" />
           {/* Pulse dot ! */}
           <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 ring-2 ring-[var(--color-bg-secondary)] pulse-dot" />
         </div>
