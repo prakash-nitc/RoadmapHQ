@@ -3,7 +3,7 @@ import { getDashboardData } from "@/lib/actions";
 import { MissionBriefing } from "@/components/dashboard/MissionBriefing";
 import { DailyMission } from "@/components/dashboard/DailyMission";
 import { RevisionQueue } from "@/components/dashboard/RevisionQueue";
-import { GitHubHeatmap } from "@/components/dashboard/GitHubHeatmap";
+import { MonthlyStreakCalendar } from "@/components/dashboard/MonthlyStreakCalendar";
 import { PatternReadiness } from "@/components/dashboard/PatternReadiness";
 import { StreakWarning } from "@/components/dashboard/StreakWarning";
 import { MissedDayCard } from "@/components/dashboard/MissedDayCard";
@@ -103,7 +103,13 @@ export default async function Dashboard() {
             embedded
           />
           <div className="h-px bg-[var(--color-border-subtle)] mx-6 my-2" />
-          <GitHubHeatmap data={data.heatmapData} embedded />
+          <MonthlyStreakCalendar
+            data={data.heatmapData}
+            startDateISO={data.startDateISO}
+            currentStreak={data.currentStreak}
+            longestStreak={data.longestStreak}
+            embedded
+          />
         </div>
 
         <div className="lg:col-span-1 flex">

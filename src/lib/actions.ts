@@ -289,6 +289,7 @@ export async function getDashboardData() {
     targetDate: settings?.targetDate
       ? format(settings.targetDate, "MMM dd, yyyy")
       : null,
+    startDateISO: format(startDate, "yyyy-MM-dd"),
     placementCountdown: buildPlacementCountdown({
       targetDate: settings?.targetDate ?? null,
       solvedProblems,
