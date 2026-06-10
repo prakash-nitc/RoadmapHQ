@@ -91,29 +91,29 @@ export default async function Dashboard() {
         targetDate={data.targetDate}
       />
 
-      {/* Combined Today's mission + Study activity card | Revision engine.
-          items-stretch so the right card matches the (taller) left card height. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-stretch">
-        <div className="lg:col-span-2 section-card flex flex-col">
-          <DailyMission
-            nextVideo={data.nextVideo}
-            todayLog={data.todayLog}
-            revisionsDue={data.todayRevisions.length}
-            revisionsDone={data.todayRevisionsCompleted}
-            embedded
-          />
-          <div className="h-px bg-[var(--color-border-subtle)] mx-6 my-2" />
+      {/* Today's mission + Revision engine | compact study calendar.
+          Calendar lives in the right rail like a widget, not a full panel. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
+        <div className="lg:col-span-2 space-y-10">
+          <div className="section-card">
+            <DailyMission
+              nextVideo={data.nextVideo}
+              todayLog={data.todayLog}
+              revisionsDue={data.todayRevisions.length}
+              revisionsDone={data.todayRevisionsCompleted}
+              embedded
+            />
+          </div>
+          <RevisionQueue revisions={data.todayRevisions} />
+        </div>
+
+        <div className="lg:col-span-1">
           <MonthlyStreakCalendar
             data={data.heatmapData}
             startDateISO={data.startDateISO}
             currentStreak={data.currentStreak}
             longestStreak={data.longestStreak}
-            embedded
           />
-        </div>
-
-        <div className="lg:col-span-1 flex">
-          <RevisionQueue revisions={data.todayRevisions} />
         </div>
       </div>
 

@@ -64,45 +64,40 @@ export function MonthlyStreakCalendar({
     <div
       className={
         embedded
-          ? "px-7 pt-7 pb-6"
-          : "section-card p-6"
+          ? "px-5 pt-5 pb-4 max-w-[360px] mx-auto"
+          : "section-card p-5 max-w-[380px]"
       }
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setViewMonth((m) => subMonths(m, 1))}
-          className="p-1.5 rounded-md hover:bg-[var(--color-bg-card-hover)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+          className="p-1 rounded-md hover:bg-[var(--color-bg-card-hover)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
           aria-label="Previous month"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-3.5 h-3.5" />
         </button>
 
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)] font-semibold">
-            Study calendar
-          </p>
-          <h2 className="text-base font-bold text-[var(--color-text-primary)] mt-0.5">
-            {format(viewMonth, "MMMM yyyy")}
-          </h2>
-        </div>
+        <h2 className="text-sm font-bold text-[var(--color-text-primary)] px-3 py-0.5 rounded-full bg-[var(--color-bg-primary)]/60 border border-[var(--color-border-subtle)]">
+          {format(viewMonth, "MMMM yyyy")}
+        </h2>
 
         <button
           onClick={() => setViewMonth((m) => addMonths(m, 1))}
           disabled={!canGoForward}
-          className="p-1.5 rounded-md hover:bg-[var(--color-bg-card-hover)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+          className="p-1 rounded-md hover:bg-[var(--color-bg-card-hover)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed"
           aria-label="Next month"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Day-of-week labels */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-0.5 mb-1">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div
             key={d}
-            className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-semibold text-center"
+            className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-semibold text-center"
           >
             {d}
           </div>
@@ -110,7 +105,7 @@ export function MonthlyStreakCalendar({
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-0.5">
         {days.map((day) => {
           const inMonth = isSameMonth(day, viewMonth);
           const isFuture = isBefore(today, day);
@@ -180,7 +175,7 @@ export function MonthlyStreakCalendar({
                     }`
                   : format(day, "MMM d, yyyy")
               }
-              className={`aspect-square rounded-md flex items-center justify-center text-sm select-none transition-colors ${styleByTone[tone]}`}
+              className={`aspect-square rounded flex items-center justify-center text-[11px] select-none transition-colors ${styleByTone[tone]}`}
             >
               {content}
             </div>
@@ -188,23 +183,23 @@ export function MonthlyStreakCalendar({
         })}
       </div>
 
-      {/* Footer — current + max streak */}
-      <div className="mt-5 pt-4 border-t border-[var(--color-border-subtle)] flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--color-bg-primary)]/50 border border-[var(--color-border-subtle)]">
-          <span className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-semibold">
+      {/* Footer — current + max streak, single compact strip */}
+      <div className="mt-3 pt-3 border-t border-[var(--color-border-subtle)] flex items-center justify-center gap-2">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-bg-primary)]/50 border border-[var(--color-border-subtle)]">
+          <span className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-semibold">
             Current
           </span>
-          <Flame className="w-3.5 h-3.5 text-[var(--color-accent-amber)]" />
-          <span className="text-sm font-bold font-mono text-[var(--color-text-primary)]">
+          <Flame className="w-3 h-3 text-[var(--color-accent-amber)]" />
+          <span className="text-xs font-bold font-mono text-[var(--color-text-primary)]">
             {currentStreak}
           </span>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--color-bg-primary)]/50 border border-[var(--color-border-subtle)]">
-          <span className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-semibold">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-bg-primary)]/50 border border-[var(--color-border-subtle)]">
+          <span className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-semibold">
             Max
           </span>
-          <Code2 className="w-3.5 h-3.5 text-[var(--color-accent-purple)]" />
-          <span className="text-sm font-bold font-mono text-[var(--color-text-primary)]">
+          <Code2 className="w-3 h-3 text-[var(--color-accent-purple)]" />
+          <span className="text-xs font-bold font-mono text-[var(--color-text-primary)]">
             {longestStreak}
           </span>
         </div>
