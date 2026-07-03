@@ -116,14 +116,14 @@ export default function ProblemsPage() {
             placeholder="Search problems..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)]"
+            className="glass-input w-full pl-9 pr-4 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]"
           />
         </div>
 
         <select
           value={filterPattern}
           onChange={(e) => setFilterPattern(e.target.value)}
-          className="px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent-blue)]"
+          className="glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-secondary)]"
         >
           <option value="">All patterns</option>
           {patterns.map((p) => (
@@ -134,7 +134,7 @@ export default function ProblemsPage() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent-blue)]"
+          className="glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-secondary)]"
         >
           <option value="">All status</option>
           {STATUS_OPTIONS.map((o) => (
@@ -145,7 +145,7 @@ export default function ProblemsPage() {
         <select
           value={filterDifficulty}
           onChange={(e) => setFilterDifficulty(e.target.value)}
-          className="px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent-blue)]"
+          className="glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-secondary)]"
         >
           <option value="">All difficulty</option>
           <option value="EASY">Easy</option>
@@ -158,7 +158,7 @@ export default function ProblemsPage() {
       <div className="hidden md:block section-card overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[var(--color-border)]">
+            <tr className="border-b border-[var(--color-border)] bg-[rgba(255,255,255,0.02)]">
               <th className="text-left text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider px-4 py-3">Status</th>
               <th className="text-left text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider px-4 py-3">Problem</th>
               <th className="text-left text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider px-4 py-3">Pattern</th>

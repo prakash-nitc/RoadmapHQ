@@ -101,26 +101,26 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Admin</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Admin</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           Add new patterns, videos, and problems to your roadmap
         </p>
       </div>
 
-      {/* Form Selector */}
-      <div className="flex gap-2">
+      {/* Form Selector — pill group */}
+      <div className="glass-input inline-flex items-center gap-1 p-1 rounded-full">
         {forms.map((f) => {
           const Icon = f.icon;
           return (
             <button
               key={f.key}
               onClick={() => setActiveForm(f.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 activeForm === f.key
-                  ? "bg-[var(--color-accent-blue-dim)] text-[var(--color-accent-blue)] border border-blue-800"
-                  : "bg-[var(--color-bg-card)] text-[var(--color-text-muted)] border border-[var(--color-border)] hover:text-[var(--color-text-primary)]"
+                  ? "bg-gradient-to-r from-[var(--color-accent-blue)] to-[var(--color-accent-purple)] text-white shadow-lg shadow-blue-500/20"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -132,13 +132,13 @@ export default function AdminPage() {
 
       {/* Success Message */}
       {success && (
-        <div className="p-3 rounded-lg bg-[var(--color-accent-emerald-dim)] border border-emerald-800 text-sm text-[var(--color-accent-emerald)]">
+        <div className="p-3 rounded-lg bg-[var(--color-accent-emerald-dim)]/40 border border-emerald-800/50 text-sm text-[var(--color-accent-emerald)]">
           ✓ {success}
         </div>
       )}
 
       {/* Forms */}
-      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 space-y-4">
+      <div className="section-card p-7 space-y-4">
         {activeForm === "pattern" && (
           <>
             <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">New Pattern</h2>
@@ -147,16 +147,16 @@ export default function AdminPage() {
               placeholder="Pattern name (e.g. Trie, Bit Manipulation)"
               value={patternName}
               onChange={(e) => setPatternName(e.target.value)}
-              className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)]"
+              className="w-full glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]"
             />
             <textarea
               placeholder="Description (optional)"
               value={patternDesc}
               onChange={(e) => setPatternDesc(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)] resize-y"
+              className="w-full glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] resize-y"
             />
-            <button onClick={handleAddPattern} disabled={isPending || !patternName.trim()} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-blue)] text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50">
+            <button onClick={handleAddPattern} disabled={isPending || !patternName.trim()} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--color-accent-blue)] to-[var(--color-accent-purple)] text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 shadow-lg shadow-blue-500/20">
               <Plus className="w-4 h-4" /> Add Pattern
             </button>
           </>
@@ -166,15 +166,15 @@ export default function AdminPage() {
           <>
             <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">New Video</h2>
             <div className="grid grid-cols-2 gap-3">
-              <input type="number" placeholder="Episode #" value={videoEp} onChange={(e) => setVideoEp(e.target.value)} className="px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)]" />
-              <input type="text" placeholder="Duration (e.g. 32:15)" value={videoDuration} onChange={(e) => setVideoDuration(e.target.value)} className="px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)]" />
+              <input type="number" placeholder="Episode #" value={videoEp} onChange={(e) => setVideoEp(e.target.value)} className="glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]" />
+              <input type="text" placeholder="Duration (e.g. 32:15)" value={videoDuration} onChange={(e) => setVideoDuration(e.target.value)} className="glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]" />
             </div>
-            <input type="text" placeholder="Video title" value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)]" />
-            <select value={videoPattern} onChange={(e) => setVideoPattern(e.target.value)} className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent-blue)]">
+            <input type="text" placeholder="Video title" value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} className="w-full glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]" />
+            <select value={videoPattern} onChange={(e) => setVideoPattern(e.target.value)} className="w-full glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-secondary)]">
               <option value="">Select Pattern</option>
               {patterns.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <button onClick={handleAddVideo} disabled={isPending || !videoTitle || !videoPattern || !videoEp} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-blue)] text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50">
+            <button onClick={handleAddVideo} disabled={isPending || !videoTitle || !videoPattern || !videoEp} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--color-accent-blue)] to-[var(--color-accent-purple)] text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 shadow-lg shadow-blue-500/20">
               <Plus className="w-4 h-4" /> Add Video
             </button>
           </>
@@ -183,27 +183,27 @@ export default function AdminPage() {
         {activeForm === "problem" && (
           <>
             <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">New Problem</h2>
-            <input type="text" placeholder="Problem title" value={problemTitle} onChange={(e) => setProblemTitle(e.target.value)} className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)]" />
-            <input type="url" placeholder="Problem URL (LeetCode/GFG link)" value={problemUrl} onChange={(e) => setProblemUrl(e.target.value)} className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)]" />
+            <input type="text" placeholder="Problem title" value={problemTitle} onChange={(e) => setProblemTitle(e.target.value)} className="w-full glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]" />
+            <input type="url" placeholder="Problem URL (LeetCode/GFG link)" value={problemUrl} onChange={(e) => setProblemUrl(e.target.value)} className="w-full glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]" />
             <div className="grid grid-cols-3 gap-3">
-              <select value={problemPattern} onChange={(e) => setProblemPattern(e.target.value)} className="px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent-blue)]">
+              <select value={problemPattern} onChange={(e) => setProblemPattern(e.target.value)} className="glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-secondary)]">
                 <option value="">Pattern</option>
                 {patterns.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
-              <select value={problemDifficulty} onChange={(e) => setProblemDifficulty(e.target.value)} className="px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent-blue)]">
+              <select value={problemDifficulty} onChange={(e) => setProblemDifficulty(e.target.value)} className="glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-secondary)]">
                 <option value="">Difficulty</option>
                 <option value="EASY">Easy</option>
                 <option value="MEDIUM">Medium</option>
                 <option value="HARD">Hard</option>
               </select>
-              <select value={problemPlatform} onChange={(e) => setProblemPlatform(e.target.value)} className="px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent-blue)]">
+              <select value={problemPlatform} onChange={(e) => setProblemPlatform(e.target.value)} className="glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-secondary)]">
                 <option value="LEETCODE">LeetCode</option>
                 <option value="GFG">GFG</option>
                 <option value="OTHER">Other</option>
               </select>
             </div>
-            <input type="text" placeholder="Sub-pattern (optional, e.g. Traversal)" value={problemSubPattern} onChange={(e) => setProblemSubPattern(e.target.value)} className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)]" />
-            <button onClick={handleAddProblem} disabled={isPending || !problemTitle || !problemPattern || !problemUrl} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-blue)] text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50">
+            <input type="text" placeholder="Sub-pattern (optional, e.g. Traversal)" value={problemSubPattern} onChange={(e) => setProblemSubPattern(e.target.value)} className="w-full glass-input px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]" />
+            <button onClick={handleAddProblem} disabled={isPending || !problemTitle || !problemPattern || !problemUrl} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--color-accent-blue)] to-[var(--color-accent-purple)] text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 shadow-lg shadow-blue-500/20">
               <Plus className="w-4 h-4" /> Add Problem
             </button>
           </>

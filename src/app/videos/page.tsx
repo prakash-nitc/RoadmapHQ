@@ -125,10 +125,10 @@ export default function VideosPage() {
             placeholder="Search videos..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)]"
+            className="glass-input w-full pl-9 pr-4 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]"
           />
         </div>
-        <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden self-start sm:self-auto">
+        <div className="flex rounded-lg border border-[rgba(255,255,255,0.07)] overflow-hidden self-start sm:self-auto">
           {(["all", "unwatched", "watched"] as const).map((f) => (
             <button
               key={f}
@@ -165,10 +165,10 @@ export default function VideosPage() {
                 return (
                   <div
                     key={video.id}
-                    className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border transition-all ${
+                    className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg transition-all ${
                       video.watched
-                        ? "bg-[var(--color-accent-emerald-dim)]/20 border-emerald-800/40"
-                        : "bg-[var(--color-bg-card)] border-[var(--color-border)] hover:border-[var(--color-accent-purple)]/60"
+                        ? "bg-[var(--color-accent-emerald-dim)]/20 border border-emerald-800/40"
+                        : "glass-row hover:!border-[var(--color-accent-purple)]/50"
                     }`}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">

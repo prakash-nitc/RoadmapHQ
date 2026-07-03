@@ -159,27 +159,27 @@ export function PatternDetailClient({ pattern }: { pattern: SerializedPattern })
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-3 mt-4">
-          <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg p-3 text-center">
-            <div className="text-lg font-bold font-mono text-[var(--color-accent-purple)]">
+        <div className="grid grid-cols-3 gap-4 mt-5">
+          <div className="section-card p-4 text-center">
+            <div className="text-xl font-bold font-mono text-[var(--color-accent-purple)]">
               {pattern.watchedVids}/{totalVids}
             </div>
-            <div className="text-xs text-[var(--color-text-muted)]">Videos</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[var(--color-text-muted)] mt-1">Videos</div>
           </div>
-          <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg p-3 text-center">
-            <div className="text-lg font-bold font-mono text-[var(--color-accent-emerald)]">
+          <div className="section-card p-4 text-center">
+            <div className="text-xl font-bold font-mono text-[var(--color-accent-emerald)]">
               {pattern.solvedProbs}/{totalProbs}
             </div>
-            <div className="text-xs text-[var(--color-text-muted)]">Problems</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[var(--color-text-muted)] mt-1">Problems</div>
           </div>
-          <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg p-3 text-center">
-            <div className="text-lg font-bold font-mono text-[var(--color-accent-amber)]">
+          <div className="section-card p-4 text-center">
+            <div className="text-xl font-bold font-mono text-[var(--color-accent-amber)]">
               {totalProbs > 0
                 ? Math.round(pattern.problems.reduce((s, p) => s + p.masteryScore, 0) / totalProbs)
                 : 0}
               %
             </div>
-            <div className="text-xs text-[var(--color-text-muted)]">Mastery</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[var(--color-text-muted)] mt-1">Mastery</div>
           </div>
         </div>
       </div>
@@ -221,10 +221,10 @@ export function PatternDetailClient({ pattern }: { pattern: SerializedPattern })
             return (
               <div
                 key={video.id}
-                className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
                   video.watched
-                    ? "bg-[var(--color-accent-emerald-dim)]/20 border-emerald-800/40"
-                    : "bg-[var(--color-bg-card)] border-[var(--color-border)] hover:border-[var(--color-accent-purple)]/60"
+                    ? "bg-[var(--color-accent-emerald-dim)]/20 border border-emerald-800/40"
+                    : "glass-row hover:!border-[var(--color-accent-purple)]/50"
                 }`}
               >
                 <button
@@ -281,7 +281,7 @@ export function PatternDetailClient({ pattern }: { pattern: SerializedPattern })
             return (
               <div
                 key={problem.id}
-                className="flex items-center gap-3 p-3 rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border)] hover:border-[var(--color-accent-blue)] transition-colors"
+                className="glass-row flex items-center gap-3 p-3 rounded-lg hover:!border-[var(--color-accent-blue)]/50"
               >
                 {/* Status selector */}
                 <select
@@ -361,7 +361,7 @@ export function PatternDetailClient({ pattern }: { pattern: SerializedPattern })
               onChange={(e) => setNotesValue(e.target.value)}
               placeholder="What clicked? What tripped you up? Quick template snippets..."
               rows={12}
-              className="w-full bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg p-3 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)] transition-colors resize-y font-mono leading-relaxed"
+              className="glass-input w-full rounded-lg p-3 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] transition-colors resize-y font-mono leading-relaxed"
             />
           </div>
           <div className="flex items-center justify-end gap-3">

@@ -69,7 +69,7 @@ export function RevisionClient({
           </h2>
         </div>
         {todayRevisions.length === 0 ? (
-          <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-8 text-center">
+          <div className="section-card p-8 text-center">
             <CheckCircle2 className="w-8 h-8 text-[var(--color-accent-emerald)] mx-auto mb-2" />
             <p className="text-sm text-[var(--color-text-secondary)]">All caught up! No revisions due today.</p>
           </div>
@@ -78,7 +78,7 @@ export function RevisionClient({
             {todayRevisions.map((rev) => (
               <div
                 key={rev.id}
-                className="flex items-center gap-3 p-4 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-accent-amber)] border-opacity-30 hover:bg-[var(--color-bg-card-hover)] transition-colors"
+                className="glass-row flex items-center gap-3 p-4 rounded-xl !border-[var(--color-accent-amber)]/30 hover:!border-[var(--color-accent-amber)]/60"
               >
                 <div className="w-9 h-9 rounded-lg bg-[var(--color-accent-amber-dim)] flex items-center justify-center shrink-0">
                   <RotateCcw className="w-4.5 h-4.5 text-[var(--color-accent-amber)]" />
@@ -133,7 +133,7 @@ export function RevisionClient({
             {upcomingRevisions.map((rev) => (
               <div
                 key={rev.id}
-                className="flex items-center gap-3 p-3 rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border)]"
+                className="glass-row flex items-center gap-3 p-3 rounded-lg"
               >
                 <span className="text-xs font-mono text-[var(--color-accent-blue)] w-16 shrink-0">
                   {rev.scheduledDate}
@@ -161,7 +161,7 @@ export function RevisionClient({
             {completedRevisions.map((rev) => (
               <div
                 key={rev.id}
-                className="flex items-center gap-3 p-3 rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] opacity-70"
+                className="glass-row flex items-center gap-3 p-3 rounded-lg opacity-70"
               >
                 {rev.status === "COMPLETED" ? (
                   <CheckCircle2 className="w-4 h-4 text-[var(--color-accent-emerald)] shrink-0" />

@@ -249,7 +249,7 @@ export default function GoalsPage() {
               type="date"
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
-              className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-blue)]"
+              className="glass-input w-full px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)]"
             />
           </Field>
           <Field label="Daily study time (minutes)">
@@ -259,7 +259,7 @@ export default function GoalsPage() {
               onChange={(e) =>
                 setDailyStudyMins(parseInt(e.target.value) || 0)
               }
-              className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-blue)]"
+              className="glass-input w-full px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)]"
             />
           </Field>
           <Field label="Daily videos target">
@@ -269,7 +269,7 @@ export default function GoalsPage() {
               onChange={(e) =>
                 setDailyVideos(parseInt(e.target.value) || 0)
               }
-              className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-blue)]"
+              className="glass-input w-full px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)]"
             />
           </Field>
           <Field label="Daily problems target">
@@ -279,7 +279,7 @@ export default function GoalsPage() {
               onChange={(e) =>
                 setDailyProblems(parseInt(e.target.value) || 0)
               }
-              className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-blue)]"
+              className="glass-input w-full px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)]"
             />
           </Field>
         </div>

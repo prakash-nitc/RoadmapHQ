@@ -56,23 +56,27 @@ export default function JournalPage() {
       </div>
 
       {/* Date Navigation */}
-      <div className="flex items-center justify-center gap-4">
-        <button
-          onClick={prevDay}
-          className="p-2 rounded-lg hover:bg-[var(--color-bg-card)] transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 text-[var(--color-text-muted)]" />
-        </button>
-        <div className="text-center">
-          <p className="text-lg font-semibold text-[var(--color-text-primary)]">{dateStr}</p>
+      <div className="flex items-center justify-center">
+        <div className="glass-input flex items-center gap-2 rounded-full px-2 py-1.5">
+          <button
+            onClick={prevDay}
+            className="p-1.5 rounded-full hover:bg-[var(--color-bg-card-hover)] transition-colors"
+            aria-label="Previous day"
+          >
+            <ChevronLeft className="w-4 h-4 text-[var(--color-text-muted)]" />
+          </button>
+          <p className="text-sm font-semibold text-[var(--color-text-primary)] px-3 min-w-[220px] text-center">
+            {dateStr}
+          </p>
+          <button
+            onClick={nextDay}
+            disabled={startOfDay(selectedDate).getTime() >= startOfDay(new Date()).getTime()}
+            className="p-1.5 rounded-full hover:bg-[var(--color-bg-card-hover)] transition-colors disabled:opacity-30"
+            aria-label="Next day"
+          >
+            <ChevronRight className="w-4 h-4 text-[var(--color-text-muted)]" />
+          </button>
         </div>
-        <button
-          onClick={nextDay}
-          disabled={startOfDay(selectedDate).getTime() >= startOfDay(new Date()).getTime()}
-          className="p-2 rounded-lg hover:bg-[var(--color-bg-card)] transition-colors disabled:opacity-30"
-        >
-          <ChevronRight className="w-5 h-5 text-[var(--color-text-muted)]" />
-        </button>
       </div>
 
       {/* Journal Entry */}
@@ -89,7 +93,7 @@ export default function JournalPage() {
           onChange={(e) => { setEntry(e.target.value); setSaved(false); }}
           placeholder="Write about what you learned today... key concepts, breakthroughs, mistakes, insights..."
           rows={12}
-          className="w-full bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg p-4 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent-blue)] transition-colors resize-y font-mono leading-relaxed"
+          className="glass-input w-full rounded-lg p-4 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] transition-colors resize-y font-mono leading-relaxed"
         />
 
         <div className="flex items-center justify-between mt-4">

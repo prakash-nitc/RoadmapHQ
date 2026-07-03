@@ -228,6 +228,33 @@ body {
   border-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Glass input — for text fields, selects, textareas */
+.glass-input {
+  background: rgba(22, 22, 31, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.glass-input:focus,
+.glass-input:focus-within {
+  border-color: var(--color-accent-blue);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.12);
+  outline: none;
+}
+
+/* Glass row — for list items. Translucency only (no blur):
+   pages render 100+ rows and per-row backdrop-filter is expensive. */
+.glass-row {
+  background: rgba(255, 255, 255, 0.028);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.glass-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 /* Animated progress bar fill — with a slow shimmer sweep for life */
 .progress-bar-fill {
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
