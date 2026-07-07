@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Layers, PlayCircle, Code2 } from "lucide-react";
+import { Plus, Layers, PlayCircle, Code2, Settings2 } from "lucide-react";
 import { addPattern, addVideo, addProblem, getPatterns } from "@/lib/actions";
+import { ManageProblems } from "@/components/admin/ManageProblems";
 
 interface PatternOption {
   id: string;
@@ -12,7 +13,7 @@ interface PatternOption {
 
 export default function AdminPage() {
   const [patterns, setPatterns] = useState<PatternOption[]>([]);
-  const [activeForm, setActiveForm] = useState<"pattern" | "video" | "problem">("pattern");
+  const [activeForm, setActiveForm] = useState<"pattern" | "video" | "problem" | "manage">("pattern");
   const [isPending, startTransition] = useTransition();
   const [success, setSuccess] = useState("");
   const router = useRouter();
@@ -98,6 +99,7 @@ export default function AdminPage() {
     { key: "pattern" as const, label: "Add Pattern", icon: Layers },
     { key: "video" as const, label: "Add Video", icon: PlayCircle },
     { key: "problem" as const, label: "Add Problem", icon: Code2 },
+    { key: "manage" as const, label: "Manage Problems", icon: Settings2 },
   ];
 
   return (
@@ -206,6 +208,15 @@ export default function AdminPage() {
             <button onClick={handleAddProblem} disabled={isPending || !problemTitle || !problemPattern || !problemUrl} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--color-accent-blue)] to-[var(--color-accent-purple)] text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 shadow-lg shadow-blue-500/20">
               <Plus className="w-4 h-4" /> Add Problem
             </button>
+          </>
+        )}
+
+        {activeForm === "manage" && (
+          <>
+            <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+              Edit &amp; delete problems
+            </h2>
+            <ManageProblems patterns={patterns} />
           </>
         )}
       </div>

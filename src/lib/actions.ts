@@ -1013,6 +1013,50 @@ export async function addProblem(data: {
   return prisma.problem.create({ data });
 }
 
+export async function updateProblem(
+  id: string,
+  data: {
+    title?: string;
+    patternId?: string;
+    difficulty?: string | null;
+    platform?: string;
+    url?: string;
+    subPattern?: string | null;
+  }
+) {
+  const problem = await prisma.problem.update({ where: { id }, data });
+  // Moving a problem to another pattern can change both patterns' completion.
+  if (data.patternId) await maybeCompletePattern(data.patternId);
+  await maybeCompletePattern(problem.patternId);
+  return problem;
+}
+
+export async function deleteProblem(id: string) {
+  const problem = await prisma.problem.findUnique({ where: { id } });
+  if (!problem) return;
+  // Cascade set on Revision handles pending/old revisions automatically.
+  await prisma.problem.delete({ where: { id } });
+  await maybeCompletePattern(problem.patternId);
+}
+
+// Lightweight list for the admin manage tab — id + editable fields only.
+export async function getProblemsForAdmin() {
+  const problems = await prisma.problem.findMany({
+    include: { pattern: { select: { id: true, name: true } } },
+    orderBy: [{ pattern: { order: "asc" } }, { title: "asc" }],
+  });
+  return problems.map((p) => ({
+    id: p.id,
+    title: p.title,
+    url: p.url,
+    difficulty: p.difficulty,
+    platform: p.platform,
+    subPattern: p.subPattern,
+    patternId: p.patternId,
+    patternName: p.pattern.name,
+  }));
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ANALYTICS
 // ═══════════════════════════════════════════════════════════════
