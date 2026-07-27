@@ -1066,8 +1066,6 @@ export async function getProblemsForAdmin() {
 
 export async function getAnalyticsData() {
   const today = startOfDay(new Date());
-  const sevenDaysAgo = subDays(today, 7);
-  const fourteenDaysAgo = subDays(today, 14);
   const thirtyDaysAgo = subDays(today, 30);
 
   const [dailyLogs, allSolvedProblems, patterns] = await Promise.all([
@@ -1082,17 +1080,49 @@ export async function getAnalyticsData() {
     }),
   ]);
 
-  // ─── This week vs last week ────────────────────────────────
-  const problemsThisWeek = allSolvedProblems.filter(
-    (p) => p.solvedAt && p.solvedAt >= sevenDaysAgo
+  // Solve timestamps only, sorted — used for all time-window rollups.
+  const solveDates = allSolvedProblems
+    .map((p) => p.solvedAt)
+    .filter((d): d is Date => d !== null);
+
+  // ─── This week vs last week (calendar weeks, Mon–Sun — matches Weekly Review) ─
+  const thisWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const thisWeekEnd = endOfWeek(today, { weekStartsOn: 1 });
+  const lastWeekStart = subDays(thisWeekStart, 7);
+  const lastWeekEnd = endOfDay(subDays(thisWeekStart, 1));
+
+  const problemsThisWeek = solveDates.filter(
+    (d) => d >= thisWeekStart && d <= thisWeekEnd
   ).length;
-  const problemsLastWeek = allSolvedProblems.filter(
-    (p) =>
-      p.solvedAt &&
-      p.solvedAt >= fourteenDaysAgo &&
-      p.solvedAt < sevenDaysAgo
+  const problemsLastWeek = solveDates.filter(
+    (d) => d >= lastWeekStart && d <= lastWeekEnd
   ).length;
   const weekDelta = problemsThisWeek - problemsLastWeek;
+
+  // ─── Weekly momentum: problems per calendar week, last 8 weeks ─────────
+  // Directly visualises the recovery arc (a sick week of 0 → a strong week).
+  const weeklyTrend: { label: string; count: number; isCurrent: boolean }[] = [];
+  for (let w = 7; w >= 0; w--) {
+    const wStart = subDays(thisWeekStart, w * 7);
+    const wEnd = endOfWeek(wStart, { weekStartsOn: 1 });
+    const count = solveDates.filter((d) => d >= wStart && d <= wEnd).length;
+    weeklyTrend.push({
+      label: format(wStart, "MMM d"),
+      count,
+      isCurrent: w === 0,
+    });
+  }
+  const bestWeek = weeklyTrend.reduce(
+    (best, wk) => (wk.count > best.count ? wk : best),
+    { label: "—", count: 0, isCurrent: false }
+  );
+  // Momentum = this week vs the 4-week trailing average (excluding this week).
+  const priorFour = weeklyTrend.slice(3, 7); // the 4 weeks before the current
+  const priorFourAvg =
+    priorFour.length > 0
+      ? priorFour.reduce((s, wk) => s + wk.count, 0) / priorFour.length
+      : 0;
+  const momentumDelta = Math.round((problemsThisWeek - priorFourAvg) * 10) / 10;
 
   // ─── Consistency score (last 30 days) ──────────────────────
   const last30Logs = dailyLogs.filter((l) => l.date >= thirtyDaysAgo);
@@ -1194,6 +1224,11 @@ export async function getAnalyticsData() {
     dailyAverage,
     daysActive,
     totalSolved,
+
+    // Momentum
+    weeklyTrend,
+    bestWeek,
+    momentumDelta,
 
     // Charts
     dailyProblems,

@@ -39,6 +39,10 @@ interface AnalyticsData {
   daysActive: number;
   totalSolved: number;
 
+  weeklyTrend: { label: string; count: number; isCurrent: boolean }[];
+  bestWeek: { label: string; count: number; isCurrent: boolean };
+  momentumDelta: number;
+
   dailyProblems: { date: string; label: string; problems: number; videos: number }[];
   difficultyCounts: { EASY: number; MEDIUM: number; HARD: number; UNKNOWN: number };
 
@@ -120,6 +124,15 @@ export function AnalyticsClient({ data }: { data: AnalyticsData }) {
           color="var(--color-accent-purple)"
         />
       </div>
+
+      {/* Weekly momentum — the progress / recovery arc */}
+      <WeeklyMomentum
+        weeklyTrend={data.weeklyTrend}
+        bestWeek={data.bestWeek}
+        momentumDelta={data.momentumDelta}
+        problemsThisWeek={data.problemsThisWeek}
+        problemsLastWeek={data.problemsLastWeek}
+      />
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
@@ -271,6 +284,141 @@ export function AnalyticsClient({ data }: { data: AnalyticsData }) {
             emptyHint="No data yet — start solving."
           />
         </div>
+      </div>
+    </div>
+  );
+}
+
+function WeeklyMomentum({
+  weeklyTrend,
+  bestWeek,
+  momentumDelta,
+  problemsThisWeek,
+  problemsLastWeek,
+}: {
+  weeklyTrend: { label: string; count: number; isCurrent: boolean }[];
+  bestWeek: { label: string; count: number; isCurrent: boolean };
+  momentumDelta: number;
+  problemsThisWeek: number;
+  problemsLastWeek: number;
+}) {
+  const max = Math.max(...weeklyTrend.map((w) => w.count), 1);
+  const rising = momentumDelta > 0;
+  const flat = momentumDelta === 0;
+
+  // Encouraging headline that reads the shape of the recent trend.
+  const headline = (() => {
+    if (problemsThisWeek > problemsLastWeek && problemsLastWeek === 0)
+      return "Back in the game — great comeback week 💪";
+    if (rising) return "You're accelerating — momentum is on your side";
+    if (flat) return "Holding steady — consistency compounds";
+    return "Slower week — a strong one resets the trend";
+  })();
+
+  return (
+    <div className="section-card p-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
+        <div>
+          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+            Weekly momentum
+          </h2>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+            {headline}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="eyebrow">Best week</p>
+            <p className="text-sm font-bold font-mono text-[var(--color-accent-emerald)]">
+              {bestWeek.count}{" "}
+              <span className="text-[var(--color-text-muted)] font-normal">· {bestWeek.label}</span>
+            </p>
+          </div>
+          <div
+            className="flex items-center gap-1 px-2.5 py-1 rounded-md"
+            style={{
+              background: rising
+                ? "rgba(16,185,129,0.12)"
+                : flat
+                ? "rgba(255,255,255,0.04)"
+                : "rgba(245,158,11,0.12)",
+            }}
+          >
+            {rising ? (
+              <ArrowUpRight className="w-3.5 h-3.5 text-[var(--color-accent-emerald)]" />
+            ) : flat ? (
+              <TrendingUp className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+            ) : (
+              <ArrowDownRight className="w-3.5 h-3.5 text-[var(--color-accent-amber)]" />
+            )}
+            <span
+              className="text-xs font-mono font-bold"
+              style={{
+                color: rising
+                  ? "var(--color-accent-emerald)"
+                  : flat
+                  ? "var(--color-text-muted)"
+                  : "var(--color-accent-amber)",
+              }}
+            >
+              {momentumDelta > 0 ? `+${momentumDelta}` : momentumDelta}
+            </span>
+            <span className="text-[10px] text-[var(--color-text-muted)]">vs 4-wk avg</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 8-week bars */}
+      <div className="flex items-end gap-2 sm:gap-3 h-28">
+        {weeklyTrend.map((w) => {
+          const heightPct = Math.max((w.count / max) * 100, w.count > 0 ? 8 : 2);
+          return (
+            <div key={w.label} className="flex-1 h-full flex flex-col justify-end">
+              <div className="relative w-full h-full flex items-end rounded-md bg-[rgba(255,255,255,0.025)] overflow-hidden">
+                <div
+                  className="w-full rounded-md transition-all duration-700 ease-out"
+                  style={{
+                    height: `${heightPct}%`,
+                    background: w.isCurrent
+                      ? "linear-gradient(180deg, #67e8f9, #22d3ee)"
+                      : w.count > 0
+                      ? "linear-gradient(180deg, #4f8cff, #3b6fd4)"
+                      : "rgba(255,255,255,0.04)",
+                    boxShadow: w.isCurrent
+                      ? "0 0 14px rgba(34,211,238,0.5)"
+                      : w.count > 0
+                      ? "0 0 8px rgba(79,140,255,0.3)"
+                      : "none",
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-start gap-2 sm:gap-3 mt-2">
+        {weeklyTrend.map((w) => (
+          <div key={w.label} className="flex-1 text-center">
+            <div
+              className={`text-xs font-mono font-bold ${
+                w.isCurrent
+                  ? "text-[#22d3ee]"
+                  : w.count > 0
+                  ? "text-[var(--color-text-primary)]"
+                  : "text-[var(--color-text-muted)]"
+              }`}
+            >
+              {w.count}
+            </div>
+            <div
+              className={`text-[9px] font-semibold ${
+                w.isCurrent ? "text-[#22d3ee]" : "text-[var(--color-text-muted)]"
+              }`}
+            >
+              {w.isCurrent ? "This wk" : w.label}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
