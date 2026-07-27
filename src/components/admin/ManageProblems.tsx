@@ -131,7 +131,7 @@ export function ManageProblems({ patterns }: { patterns: PatternOption[] }) {
       </p>
 
       {/* List */}
-      <div className="space-y-2 max-h-[560px] overflow-y-auto pr-1 -mr-1">
+      <div className="fade-scroll-y space-y-2 max-h-[560px] overflow-y-auto pr-1 -mr-1">
         {filtered.map((p) => {
           const isEditing = editingId === p.id;
 

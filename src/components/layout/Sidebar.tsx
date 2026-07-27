@@ -58,17 +58,40 @@ export function Sidebar({
         onClick={onNavigate}
         title={collapsed ? item.label : undefined}
         className={`
-          flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-150
+          group relative flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200
           ${collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"}
           ${
             isActive
-              ? "bg-[var(--color-accent-blue-dim)]/50 text-[var(--color-accent-blue)]" +
-                (collapsed ? "" : " nav-active")
+              ? "text-white"
               : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card)]"
           }
         `}
+        style={
+          isActive
+            ? {
+                background:
+                  "linear-gradient(90deg, rgba(79,140,255,0.22), rgba(168,85,247,0.14))",
+                boxShadow: "inset 0 0 0 1px rgba(79,140,255,0.28)",
+              }
+            : undefined
+        }
       >
-        <Icon className="w-4.5 h-4.5 shrink-0" />
+        {/* Glowing active marker */}
+        {isActive && !collapsed && (
+          <span
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full"
+            style={{
+              background: "linear-gradient(180deg, #4f8cff, #a855f7)",
+              boxShadow: "0 0 8px rgba(79,140,255,0.8)",
+            }}
+          />
+        )}
+        <Icon
+          className={`w-4.5 h-4.5 shrink-0 transition-transform duration-200 ${
+            isActive ? "" : "group-hover:scale-110"
+          }`}
+          style={isActive ? { color: "#7ba9ff" } : undefined}
+        />
         {!collapsed && item.label}
       </Link>
     );

@@ -63,7 +63,7 @@ export function RevisionQueue({ revisions }: { revisions: Revision[] }) {
           </p>
         </div>
       ) : (
-        <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1 -mr-1">
+        <div className="fade-scroll-y space-y-4 max-h-[360px] overflow-y-auto pr-1 -mr-1">
           {revisions.map((rev) => (
             <div
               key={rev.id}
