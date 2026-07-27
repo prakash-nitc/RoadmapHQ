@@ -781,7 +781,10 @@ export async function getWeeklyReview() {
   const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 });
   const thisWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
   const lastWeekStart = subDays(thisWeekStart, 7);
-  const lastWeekEnd = subDays(thisWeekStart, 1);
+  // End of last week = the last moment before this week begins. Using
+  // startOfDay (subDays alone) would drop everything solved on Sunday after
+  // midnight — the whole final day of last week vanished from the count.
+  const lastWeekEnd = endOfDay(subDays(thisWeekStart, 1));
   const daysIntoWeek = differenceInCalendarDays(now, thisWeekStart) + 1; // 1..7
   const isWeekEnded = isSunday(now) && differenceInCalendarDays(now, thisWeekStart) === 6;
 

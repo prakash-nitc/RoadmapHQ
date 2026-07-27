@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { format } from "date-fns";
 import {
   Sparkles,
   TrendingUp,
@@ -244,36 +245,49 @@ export function WeeklyReviewClient({ data }: { data: ReviewData }) {
           </div>
 
           <div className="space-y-3">
-            <SlipRow
-              label="Days missed"
-              value={`${7 - data.studyDaysThis}/7`}
-              hint={
-                data.studyDaysThis === 7
-                  ? "Perfect attendance ✨"
-                  : `${data.studyDaysThis} active days · aim for full week`
-              }
-              good={data.studyDaysThis === 7}
-            />
-            <SlipRow
-              label="Revisions skipped"
-              value={String(data.revisionsSkipped)}
-              hint={
-                data.revisionsSkipped === 0
-                  ? "Queue stayed clean"
-                  : `${data.revisionsCompleted} completed · ${data.revisionsSkipped} skipped`
-              }
-              good={data.revisionsSkipped === 0}
-            />
-            <SlipRow
-              label="Below target days"
-              value={`${7 - data.hitTargetDays}/7`}
-              hint={
-                data.hitTargetDays === 7
-                  ? "You met your target every day"
-                  : `Only ${data.hitTargetDays} days hit ${data.targetProblems}+ problems`
-              }
-              good={data.hitTargetDays === 7}
-            />
+            {(() => {
+              // Only days that have actually happened can be "missed" or
+              // "below target" — future days in the week aren't failures yet.
+              const elapsed = Math.min(Math.max(data.daysIntoWeek, 1), 7);
+              const missed = Math.max(elapsed - data.studyDaysThis, 0);
+              const belowTarget = Math.max(elapsed - data.hitTargetDays, 0);
+              return (
+                <>
+                  <SlipRow
+                    label="Days missed"
+                    value={`${missed}/${elapsed}`}
+                    hint={
+                      missed === 0
+                        ? elapsed === 7
+                          ? "Perfect attendance ✨"
+                          : "Spotless so far — keep it up"
+                        : `${data.studyDaysThis} of ${elapsed} days active`
+                    }
+                    good={missed === 0}
+                  />
+                  <SlipRow
+                    label="Revisions skipped"
+                    value={String(data.revisionsSkipped)}
+                    hint={
+                      data.revisionsSkipped === 0
+                        ? "Queue stayed clean"
+                        : `${data.revisionsCompleted} completed · ${data.revisionsSkipped} skipped`
+                    }
+                    good={data.revisionsSkipped === 0}
+                  />
+                  <SlipRow
+                    label="Below target days"
+                    value={`${belowTarget}/${elapsed}`}
+                    hint={
+                      belowTarget === 0
+                        ? "Every day hit target so far"
+                        : `${data.hitTargetDays} of ${elapsed} days hit ${data.targetProblems}+`
+                    }
+                    good={belowTarget === 0}
+                  />
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -482,46 +496,87 @@ function DayBars({
   days: { date: string; label: string; count: number }[];
   target: number;
 }) {
-  const max = Math.max(target, ...days.map((d) => d.count), 1);
+  // Headroom above the target so a target-hitting bar doesn't touch the ceiling.
+  const max = Math.max(target * 1.25, ...days.map((d) => d.count), target, 3);
+  const targetPct = (target / max) * 100;
+  const todayKey = format(new Date(), "yyyy-MM-dd");
 
   return (
-    <div className="flex items-end gap-3 h-32">
-      {days.map((d) => {
-        const heightPct = (d.count / max) * 100;
-        const hitTarget = d.count >= target;
-        return (
-          <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5">
-            <div className="flex-1 w-full flex items-end relative">
-              {/* Target line marker (translucent dashed) */}
+    <div className="relative pt-2">
+      {/* Target reference line, spanning the whole chart */}
+      <div className="relative h-36">
+        <div
+          className="absolute left-0 right-0 flex items-center gap-2 pointer-events-none z-10"
+          style={{ bottom: `${targetPct}%` }}
+        >
+          <div className="flex-1 border-t border-dashed border-[var(--color-accent-amber)]/40" />
+          <span className="text-[9px] font-mono text-[var(--color-accent-amber)]/70 shrink-0">
+            target {target}
+          </span>
+        </div>
+
+        {/* Bars sit on a shared baseline */}
+        <div className="absolute inset-0 flex items-end gap-2.5">
+          {days.map((d) => {
+            const heightPct = Math.max((d.count / max) * 100, d.count > 0 ? 6 : 0);
+            const hitTarget = d.count >= target && d.count > 0;
+            const isToday = d.date === todayKey;
+            return (
+              <div key={d.date} className="flex-1 h-full flex flex-col justify-end">
+                {/* Faint full-height track so every day is visible */}
+                <div className="relative w-full h-full flex items-end rounded-md bg-[rgba(255,255,255,0.025)] overflow-hidden">
+                  {isToday && (
+                    <div className="absolute inset-0 bg-[var(--color-accent-blue)]/[0.06] ring-1 ring-inset ring-[var(--color-accent-blue)]/25 rounded-md" />
+                  )}
+                  <div
+                    className="relative w-full rounded-md transition-all duration-700 ease-out"
+                    style={{
+                      height: `${heightPct}%`,
+                      background: hitTarget
+                        ? "linear-gradient(180deg, #34d399, var(--color-accent-emerald))"
+                        : d.count > 0
+                        ? "linear-gradient(180deg, #60a5fa, var(--color-accent-blue))"
+                        : "transparent",
+                      boxShadow: d.count > 0
+                        ? `0 0 12px ${hitTarget ? "rgba(16,185,129,0.45)" : "rgba(79,140,255,0.4)"}`
+                        : "none",
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Labels row */}
+      <div className="flex items-start gap-2.5 mt-2">
+        {days.map((d) => {
+          const isToday = d.date === todayKey;
+          return (
+            <div key={d.date} className="flex-1 text-center">
               <div
-                className="absolute left-0 right-0 border-t border-dashed border-[var(--color-border)] opacity-50"
-                style={{ bottom: `${(target / max) * 100}%` }}
-              />
-              <div
-                className="w-full rounded-md transition-all duration-700 ease-out"
-                style={{
-                  height: `${heightPct}%`,
-                  minHeight: d.count > 0 ? "4px" : "0",
-                  background: hitTarget
-                    ? "linear-gradient(180deg, var(--color-accent-emerald), #34d399)"
-                    : d.count > 0
-                    ? "linear-gradient(180deg, var(--color-accent-blue), #60a5fa)"
-                    : "transparent",
-                  boxShadow: d.count > 0 ? `0 0 8px ${hitTarget ? "rgba(16, 185, 129, 0.4)" : "rgba(79, 140, 255, 0.3)"}` : "none",
-                }}
-              />
-            </div>
-            <div className="text-center">
-              <div className="text-xs font-mono text-[var(--color-text-primary)]">
+                className={`text-sm font-mono font-bold ${
+                  d.count > 0
+                    ? "text-[var(--color-text-primary)]"
+                    : "text-[var(--color-text-muted)]"
+                }`}
+              >
                 {d.count}
               </div>
-              <div className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-semibold">
+              <div
+                className={`text-[10px] uppercase tracking-widest font-semibold ${
+                  isToday
+                    ? "text-[var(--color-accent-blue)]"
+                    : "text-[var(--color-text-muted)]"
+                }`}
+              >
                 {d.label}
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
