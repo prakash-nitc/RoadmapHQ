@@ -16,7 +16,9 @@
     "deploy:export": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/export-local.ts",
     "deploy:schema": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/deploy-schema.ts",
     "deploy:import": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/import-turso.ts",
-    "fix:urls": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/fix-problem-urls.ts"
+    "fix:urls": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/fix-problem-urls.ts",
+    "fix:difficulties": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/set-difficulties.ts",
+    "patch:seed-difficulties": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/patch-seed-difficulties.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"commonjs\"} prisma/seed.ts"
