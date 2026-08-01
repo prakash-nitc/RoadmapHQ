@@ -162,10 +162,14 @@ export default function GoalsPage() {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <p className="eyebrow flex items-center gap-1.5 mb-1">
+          <Target className="w-3.5 h-3.5 text-[var(--color-accent-emerald)]" />
+          Aim &amp; pace
+        </p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
           Goals &amp; projections
         </h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1.5">
           Set a target date and daily intent — the dashboard does the math.
         </p>
       </div>

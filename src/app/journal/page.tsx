@@ -49,8 +49,12 @@ export default function JournalPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Daily journal</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+        <p className="eyebrow flex items-center gap-1.5 mb-1">
+          <BookOpen className="w-3.5 h-3.5 text-[var(--color-accent-blue)]" />
+          Reflect &amp; retain
+        </p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Daily journal</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1.5">
           What did you learn today?
         </p>
       </div>

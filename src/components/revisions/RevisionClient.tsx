@@ -53,8 +53,12 @@ export function RevisionClient({
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Revision center</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+        <p className="eyebrow flex items-center gap-1.5 mb-1">
+          <RotateCcw className="w-3.5 h-3.5 text-[var(--color-accent-amber)]" />
+          Keep it in memory
+        </p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Revision center</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1.5">
           Spaced repetition · 3 → 7 → 14 → 30 → 60 days
         </p>
       </div>

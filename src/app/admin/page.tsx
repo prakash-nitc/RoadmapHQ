@@ -105,8 +105,12 @@ export default function AdminPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+        <p className="eyebrow flex items-center gap-1.5 mb-1">
+          <Settings2 className="w-3.5 h-3.5 text-[var(--color-accent-blue)]" />
+          Manage content
+        </p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Admin</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1.5">
           Add new patterns, videos, and problems to your roadmap
         </p>
       </div>

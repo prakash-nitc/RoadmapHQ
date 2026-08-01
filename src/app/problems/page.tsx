@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { ExternalLink, Search } from "lucide-react";
+import { ExternalLink, Search, Code2 } from "lucide-react";
 import { getProblems, getPatterns, updateProblemStatus } from "@/lib/actions";
 import { getStatusBadge } from "@/lib/utils";
 
@@ -86,9 +86,13 @@ export default function ProblemsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Problems</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            Curated problem set across {/* */}
+          <p className="eyebrow flex items-center gap-1.5 mb-1">
+            <Code2 className="w-3.5 h-3.5 text-[var(--color-accent-blue)]" />
+            Your problem set
+          </p>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Problems</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1.5">
+            Curated set across {/* */}
             <span className="font-medium text-[var(--color-text-primary)]">{problems.length}</span> problems
           </p>
         </div>

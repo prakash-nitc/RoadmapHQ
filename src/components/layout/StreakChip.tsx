@@ -4,6 +4,21 @@ import { useEffect, useState } from "react";
 import { Flame, Sparkles, Star, Snowflake } from "lucide-react";
 import { getStreakSummary } from "@/lib/actions";
 
+/** Pure-CSS burning flame — animated, no GIF. */
+export function BurningFlame({ scale = 1 }: { scale?: number }) {
+  return (
+    <span
+      className="flame"
+      style={{ transform: `scale(${scale})` }}
+      aria-hidden
+    >
+      <span className="flame__part flame__outer" />
+      <span className="flame__part flame__mid" />
+      <span className="flame__part flame__core" />
+    </span>
+  );
+}
+
 interface StreakStage {
   label: string;
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
@@ -128,6 +143,9 @@ export function StreakChip() {
     );
   }
 
+  // Active streak → live burning flame; no streak → muted ember icon.
+  const showFlame = data.currentStreak >= 1;
+
   return (
     <div className="px-3 py-2.5 rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] flex items-center gap-3">
       <div
@@ -137,7 +155,11 @@ export function StreakChip() {
           boxShadow: stage.glow,
         }}
       >
-        <Icon className="w-4 h-4" style={{ color: stage.color }} />
+        {showFlame ? (
+          <BurningFlame scale={0.82} />
+        ) : (
+          <Icon className="w-4 h-4" style={{ color: stage.color }} />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1">

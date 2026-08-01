@@ -77,8 +77,12 @@ export default function VideosPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Playlist</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+        <p className="eyebrow flex items-center gap-1.5 mb-1">
+          <PlayCircle className="w-3.5 h-3.5 text-[var(--color-accent-purple)]" />
+          Watch &amp; learn
+        </p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Playlist</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1.5">
           DSA Patterns 2025 · Padho with Pratyush
         </p>
       </div>

@@ -372,6 +372,89 @@ button:active:not(:disabled) { transform: translateY(0.5px); }
   transform-origin: 50% 85%;
 }
 
+/* ─── Live burning flame (pure CSS, no GIF) ─────────────────── */
+/* Three teardrop layers stacked: outer orange, mid amber, inner
+   yellow core — each sways on its own timing so the flame looks
+   alive. Plus a glowing ember base. */
+.flame {
+  position: relative;
+  width: 22px;
+  height: 28px;
+  display: inline-block;
+}
+.flame__part {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  transform-origin: 50% 90%;
+  filter: blur(0.4px);
+}
+/* Outer flame */
+.flame__outer {
+  width: 20px;
+  height: 26px;
+  margin-left: -10px;
+  background: linear-gradient(to top, #ff6a00 0%, #ff9500 45%, #ffcf33 100%);
+  border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
+  transform: rotate(-45deg) scale(1);
+  animation: flame-sway-1 1.3s ease-in-out infinite alternate;
+  box-shadow: 0 0 14px 2px rgba(255, 120, 0, 0.55);
+}
+/* Middle flame */
+.flame__mid {
+  width: 13px;
+  height: 19px;
+  margin-left: -6.5px;
+  background: linear-gradient(to top, #ff9500 0%, #ffd24d 55%, #fff2a8 100%);
+  border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
+  transform: rotate(-45deg);
+  animation: flame-sway-2 0.9s ease-in-out infinite alternate;
+}
+/* Inner core */
+.flame__core {
+  width: 6px;
+  height: 11px;
+  margin-left: -3px;
+  background: linear-gradient(to top, #fff2a8 0%, #ffffff 100%);
+  border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
+  transform: rotate(-45deg);
+  animation: flame-sway-3 0.7s ease-in-out infinite alternate;
+}
+/* Ember glow at the base */
+.flame::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 16px;
+  height: 6px;
+  margin-left: -8px;
+  background: radial-gradient(ellipse at center, rgba(255,140,0,0.7), transparent 70%);
+  filter: blur(2px);
+  animation: ember-pulse 1.1s ease-in-out infinite alternate;
+}
+@keyframes flame-sway-1 {
+  0% { transform: rotate(-46deg) scaleY(1) scaleX(1); }
+  50% { transform: rotate(-44deg) scaleY(1.06) scaleX(0.97); }
+  100% { transform: rotate(-45deg) scaleY(0.97) scaleX(1.03); }
+}
+@keyframes flame-sway-2 {
+  0% { transform: rotate(-44deg) scaleY(1.04); }
+  100% { transform: rotate(-46deg) scaleY(0.95); }
+}
+@keyframes flame-sway-3 {
+  0% { transform: rotate(-45deg) scaleY(1.08) translateY(0); }
+  100% { transform: rotate(-45deg) scaleY(0.92) translateY(1px); }
+}
+@keyframes ember-pulse {
+  0% { opacity: 0.6; transform: scaleX(0.9); }
+  100% { opacity: 1; transform: scaleX(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flame__outer, .flame__mid, .flame__core, .flame::after { animation: none; }
+}
+
 /* Pulse for live indicators */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
