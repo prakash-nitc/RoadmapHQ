@@ -18,9 +18,11 @@ import {
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
+import { useTransition } from "react";
 import { format } from "date-fns";
 import { DamageAssessment } from "./DamageAssessment";
-import { ReviewSession } from "./ReviewSession";
+import { PatternPractice } from "./PatternPractice";
+import { savePropeersUrl } from "@/lib/revision-actions";
 
 interface Overview {
   hasInProgress: boolean;
@@ -56,28 +58,33 @@ interface AnchorPattern {
   support: { id: string; title: string; anchorInsight: string | null; status: string; difficulty: string | null; url: string; failCount: number }[];
 }
 
-interface DueItem {
+interface CoreProblem {
   id: string;
   title: string;
   url: string;
-  tier: string | null;
   anchorInsight: string | null;
   difficulty: string | null;
   status: string;
-  failCount: number;
-  revisionStep: number;
-  mode: "RECALL" | "SKELETON" | "COLD" | "MIXED";
-  patternName: string;
-  patternOrder: number;
-  daysOverdue: number;
 }
 
-interface DueQueue {
+interface DuePattern {
+  id: string;
+  name: string;
+  order: number;
+  revStep: number;
+  revFailCount: number;
+  propeersTopic: string | null;
+  propeersSub: string | null;
+  notesHint: string | null;
+  daysOverdue: number;
+  core: CoreProblem[];
+}
+
+interface PatternQueue {
   total: number;
-  recallCount: number;
-  coldCount: number;
-  items: DueItem[];
+  propeersUrl: string | null;
   nextDueAt: string | Date | null;
+  patterns: DuePattern[];
 }
 
 function rateColor(rate: number) {
@@ -89,15 +96,24 @@ function rateColor(rate: number) {
 export function RevisionCornerClient({
   overview,
   anchors,
-  dueQueue,
+  patternQueue,
 }: {
   overview: Overview;
   anchors: AnchorPattern[];
-  dueQueue: DueQueue;
+  patternQueue: PatternQueue;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"home" | "assessment" | "review">("home");
   const [tab, setTab] = useState<"today" | "tools">("today");
+  const [propeersInput, setPropeersInput] = useState(patternQueue.propeersUrl ?? "");
+  const [savingUrl, startSaveUrl] = useTransition();
+
+  const saveUrl = () => {
+    startSaveUrl(async () => {
+      await savePropeersUrl(propeersInput);
+      router.refresh();
+    });
+  };
 
   if (mode === "assessment") {
     return (
@@ -112,8 +128,9 @@ export function RevisionCornerClient({
 
   if (mode === "review") {
     return (
-      <ReviewSession
-        items={dueQueue.items}
+      <PatternPractice
+        patterns={patternQueue.patterns}
+        propeersUrl={patternQueue.propeersUrl}
         onExit={() => {
           setMode("home");
           router.refresh();
@@ -155,9 +172,9 @@ export function RevisionCornerClient({
               style={active ? { background: "linear-gradient(90deg,#22d3ee,#4f8cff)", boxShadow: "0 4px 16px -4px rgba(34,211,238,0.5)" } : undefined}
             >
               {t.label}
-              {t.key === "today" && dueQueue.total > 0 && (
+              {t.key === "today" && patternQueue.total > 0 && (
                 <span className="ml-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded-full" style={{ background: active ? "rgba(255,255,255,0.22)" : "rgba(34,211,238,0.16)", color: active ? "#fff" : "#22d3ee" }}>
-                  {dueQueue.total}
+                  {patternQueue.total}
                 </span>
               )}
             </button>
@@ -165,10 +182,10 @@ export function RevisionCornerClient({
         })}
       </div>
 
-      {/* ═══ TODAY — the simple daily loop ═══ */}
+      {/* ═══ TODAY — the simple daily loop (pattern practice) ═══ */}
       {tab === "today" && (
         <div className="space-y-4">
-          {dueQueue.total > 0 ? (
+          {patternQueue.total > 0 ? (
             <div
               className="rounded-2xl p-6 md:p-8"
               style={{
@@ -177,36 +194,35 @@ export function RevisionCornerClient({
               }}
             >
               <div className="text-center">
-                <p className="eyebrow mb-2">Today&apos;s review</p>
-                <div className="text-6xl font-bold font-mono text-[#22d3ee] mb-1">{dueQueue.total}</div>
+                <p className="eyebrow mb-2">Patterns to practice today</p>
+                <div className="text-6xl font-bold font-mono text-[#22d3ee] mb-1">{patternQueue.total}</div>
                 <p className="text-sm text-[var(--color-text-secondary)]">
-                  {dueQueue.recallCount} to recall · {dueQueue.coldCount} to re-solve
+                  Refresh → solve 2–3 fresh problems → cold re-solve a CORE anchor
                 </p>
                 <button
                   onClick={() => setMode("review")}
                   className="mt-6 inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-white transition-transform hover:scale-105"
                   style={{ background: "linear-gradient(90deg,#22d3ee,#4f8cff)", boxShadow: "0 8px 24px -6px rgba(34,211,238,0.6)" }}
                 >
-                  Start review <ArrowRight className="w-5 h-5" />
+                  Start practice <ArrowRight className="w-5 h-5" />
                 </button>
                 <p className="text-[11px] text-[var(--color-text-muted)] mt-4">
-                  Read the title, try to recall the approach, mark got-it or missed. ~60 seconds each.
+                  Fresh problems in the pattern build recognition — that&apos;s what an OA actually tests.
                 </p>
               </div>
 
-              {/* Small preview of what's coming */}
+              {/* Preview of the patterns */}
               <div className="mt-6 pt-5 border-t border-[var(--color-border-subtle)] space-y-1.5">
-                {dueQueue.items.slice(0, 4).map((it) => (
-                  <div key={it.id} className="flex items-center gap-2 text-xs">
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0" style={it.mode === "COLD" ? { background: "rgba(79,140,255,0.16)", color: "#7ba9ff" } : { background: "rgba(34,211,238,0.14)", color: "#22d3ee" }}>
-                      {it.mode === "COLD" ? "SOLVE" : "RECALL"}
-                    </span>
-                    <span className="text-[var(--color-text-secondary)] truncate">{it.title}</span>
-                    <span className="text-[var(--color-text-muted)] ml-auto shrink-0">{it.patternName}</span>
+                {patternQueue.patterns.slice(0, 5).map((p) => (
+                  <div key={p.id} className="flex items-center gap-2 text-xs">
+                    <span className="font-mono text-[var(--color-accent-purple)] shrink-0">#{String(p.order).padStart(2, "0")}</span>
+                    <span className="text-[var(--color-text-primary)] font-medium">{p.name}</span>
+                    {p.propeersTopic && <span className="text-[var(--color-text-muted)] truncate">→ {p.propeersTopic}</span>}
+                    {p.daysOverdue > 0 && <span className="text-[10px] font-mono text-[var(--color-accent-amber)] ml-auto shrink-0">{p.daysOverdue}d overdue</span>}
                   </div>
                 ))}
-                {dueQueue.total > 4 && (
-                  <p className="text-[10px] text-[var(--color-text-muted)] pt-1">+ {dueQueue.total - 4} more</p>
+                {patternQueue.total > 5 && (
+                  <p className="text-[10px] text-[var(--color-text-muted)] pt-1">+ {patternQueue.total - 5} more</p>
                 )}
               </div>
             </div>
@@ -218,12 +234,34 @@ export function RevisionCornerClient({
               <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-3" style={{ background: "rgba(16,185,129,0.16)" }}>
                 <CheckCircle2 className="w-7 h-7 text-[var(--color-accent-emerald)]" />
               </div>
-              <h2 className="text-xl font-bold">You&apos;re clear for today</h2>
+              <h2 className="text-xl font-bold">No patterns due today</h2>
               <p className="text-sm text-[var(--color-text-muted)] mt-1.5">
-                {dueQueue.nextDueAt
-                  ? `Next review due ${format(new Date(dueQueue.nextDueAt), "MMM d")}.`
-                  : "Solve problems and they'll show up here for revision."}
+                {patternQueue.nextDueAt
+                  ? `Next pattern due ${format(new Date(patternQueue.nextDueAt), "MMM d")}.`
+                  : "Solve problems and patterns will enter the practice schedule."}
               </p>
+            </div>
+          )}
+
+          {/* Propeers link setup (once) */}
+          {!patternQueue.propeersUrl && (
+            <div className="rounded-xl p-4 glass-row">
+              <p className="text-xs font-semibold text-[var(--color-text-primary)] mb-1">Link your Propeers dashboard</p>
+              <p className="text-[11px] text-[var(--color-text-muted)] mb-3">
+                Paste the URL once and each practice session gets a one-click &quot;Open Propeers&quot; button for fresh problems.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={propeersInput}
+                  onChange={(e) => setPropeersInput(e.target.value)}
+                  placeholder="https://…"
+                  className="glass-input flex-1 px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]"
+                />
+                <button onClick={saveUrl} disabled={savingUrl || !propeersInput} className="px-3 py-2 rounded-lg text-xs font-semibold text-white shrink-0" style={{ background: "linear-gradient(90deg,#22d3ee,#4f8cff)" }}>
+                  {savingUrl ? "Saving…" : "Save"}
+                </button>
+              </div>
             </div>
           )}
 

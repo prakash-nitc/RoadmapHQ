@@ -376,12 +376,136 @@ export async function getDueQueue() {
   };
 }
 
-// Lightweight count for the dashboard nudge.
+// ─── Pattern Practice: the scheduled unit is the PATTERN ───────
+// Session = refresh notes -> solve 2-3 fresh Propeers problems -> cold
+// re-solve 1-2 CORE anchors. Elapsed-interval, forgiving of misses.
+
+const PATTERN_INTERVAL: Record<number, number> = {
+  0: 3, 1: 3, 2: 7, 3: 14, 4: 30, 5: 30,
+};
+
+// Lightweight count for the dashboard nudge — patterns due for practice.
 export async function getDueCount() {
   const endOfToday = new Date();
   endOfToday.setHours(23, 59, 59, 999);
-  return prisma.problem.count({
-    where: { revisionStep: { gte: 1 }, nextDueAt: { lte: endOfToday } },
+  return prisma.pattern.count({
+    where: { revStep: { gte: 1 }, revNextDueAt: { lte: endOfToday } },
+  });
+}
+
+export async function getPatternDueQueue() {
+  const now = new Date();
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
+
+  const [due, settings, upcoming] = await Promise.all([
+    prisma.pattern.findMany({
+      where: { revStep: { gte: 1 }, revNextDueAt: { lte: endOfToday } },
+      include: {
+        problems: {
+          where: { tier: "CORE" },
+          select: {
+            id: true,
+            title: true,
+            url: true,
+            anchorInsight: true,
+            difficulty: true,
+            status: true,
+          },
+          orderBy: { title: "asc" },
+        },
+        notes: { select: { keyLearnings: true } },
+      },
+      orderBy: { revNextDueAt: "asc" },
+    }),
+    prisma.userSettings.findFirst({ where: { id: "default" } }),
+    prisma.pattern.findFirst({
+      where: { revStep: { gte: 1 }, revNextDueAt: { gt: endOfToday } },
+      orderBy: { revNextDueAt: "asc" },
+      select: { revNextDueAt: true },
+    }),
+  ]);
+
+  return {
+    total: due.length,
+    propeersUrl: settings?.propeersUrl ?? null,
+    nextDueAt: upcoming?.revNextDueAt ?? null,
+    patterns: due.map((p) => ({
+      id: p.id,
+      name: p.name,
+      order: p.order,
+      revStep: p.revStep,
+      revFailCount: p.revFailCount,
+      propeersTopic: p.propeersTopic,
+      propeersSub: p.propeersSub,
+      notesHint: p.notes?.keyLearnings ?? null,
+      daysOverdue: p.revNextDueAt
+        ? Math.max(0, Math.floor((now.getTime() - p.revNextDueAt.getTime()) / 86400000))
+        : 0,
+      core: p.problems,
+    })),
+  };
+}
+
+// Advance a pattern's practice schedule after a session.
+export async function completePatternPractice(
+  patternId: string,
+  outcome: "solid" | "shaky"
+) {
+  const p = await prisma.pattern.findUnique({ where: { id: patternId } });
+  if (!p) return;
+  const now = new Date();
+
+  if (outcome === "solid") {
+    const interval = PATTERN_INTERVAL[p.revStep] ?? 30;
+    await prisma.pattern.update({
+      where: { id: patternId },
+      data: {
+        revStep: Math.min(p.revStep + 1, 5),
+        revFailCount: 0,
+        revLastDoneAt: now,
+        revNextDueAt: new Date(now.getTime() + interval * 86400000),
+      },
+    });
+  } else {
+    // Shaky: come back in 2 days, don't advance, note the wobble.
+    await prisma.pattern.update({
+      where: { id: patternId },
+      data: {
+        revFailCount: { increment: 1 },
+        revLastDoneAt: now,
+        revNextDueAt: new Date(now.getTime() + 2 * 86400000),
+      },
+    });
+  }
+}
+
+// Cold re-solve of a CORE anchor inside a session -> honest ladder.
+export async function markCoreResolved(problemId: string, passed: boolean) {
+  const p = await prisma.problem.findUnique({ where: { id: problemId } });
+  if (!p) return;
+  const now = new Date();
+  if (passed) {
+    const next = p.status === "MASTERED" ? "MASTERED" : "REVISED";
+    await prisma.problem.update({
+      where: { id: problemId },
+      data: { status: next, masteryScore: MASTERY_FOR[next], failCount: 0, lastReviewedAt: now },
+    });
+  } else {
+    const demoted = demote(p.status);
+    await prisma.problem.update({
+      where: { id: problemId },
+      data: { status: demoted, masteryScore: MASTERY_FOR[demoted], failCount: { increment: 1 }, lastReviewedAt: now },
+    });
+  }
+}
+
+export async function savePropeersUrl(url: string) {
+  const clean = url.trim();
+  await prisma.userSettings.upsert({
+    where: { id: "default" },
+    update: { propeersUrl: clean.length > 0 ? clean : null },
+    create: { id: "default", propeersUrl: clean.length > 0 ? clean : null },
   });
 }
 

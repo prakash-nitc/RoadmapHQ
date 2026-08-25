@@ -21,7 +21,8 @@
     "patch:seed-difficulties": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/patch-seed-difficulties.ts",
     "migrate:revision": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/migrate-revision-schema.ts",
     "seed:anchors": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/seed-anchors.ts",
-    "migrate:phase2": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/migrate-phase2-schedule.ts"
+    "migrate:phase2": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/migrate-phase2-schedule.ts",
+    "migrate:pattern-practice": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/migrate-pattern-practice.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"commonjs\"} prisma/seed.ts"

@@ -17,6 +17,15 @@ model Pattern {
   startedAt   DateTime?
   completedAt DateTime?
 
+  // ─── Pattern Practice schedule (Revision Corner) ───────────
+  // The pattern is the scheduled unit: refresh → fresh problems → CORE re-solve.
+  revStep       Int      @default(0)  // 0 = not scheduled; 1..N practice rounds
+  revNextDueAt  DateTime?
+  revLastDoneAt DateTime?
+  revFailCount  Int      @default(0)
+  propeersTopic String?  // e.g. "Arrays" — where to find fresh problems
+  propeersSub   String?  // e.g. "Sliding Window; Strings > Sliding Window"
+
   videos   Video[]
   problems Problem[]
   sessions StudySession[]
@@ -154,4 +163,5 @@ model UserSettings {
   dailyTargetProblems  Int       @default(3)
   dailyTargetStudyMins Int       @default(120)
   startDate            DateTime  @default(now())
+  propeersUrl          String?   // base link to the Propeers dashboard (fresh problems)
 }

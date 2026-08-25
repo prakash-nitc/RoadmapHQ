@@ -533,6 +533,22 @@ export async function updateProblemStatus(
   // Update daily log — both directions
   if (!wasSolved && isSolved) {
     await updateTodayLog("problem", 1);
+
+    // Ensure this problem's pattern is in the practice schedule.
+    const pat = await prisma.pattern.findUnique({
+      where: { id: problem.patternId },
+      select: { revStep: true },
+    });
+    if (pat && pat.revStep === 0) {
+      await prisma.pattern.update({
+        where: { id: problem.patternId },
+        data: {
+          revStep: 1,
+          revNextDueAt: new Date(Date.now() + 1 * 86400000),
+          revLastDoneAt: new Date(),
+        },
+      });
+    }
   } else if (wasSolved && !isSolved) {
     await updateTodayLog("problem", -1);
   }

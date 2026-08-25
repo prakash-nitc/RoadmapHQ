@@ -42,10 +42,10 @@ export function RevisionDueNudge() {
             Revision Corner
           </p>
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-            <span className="font-mono text-[#22d3ee]">{count}</span> problem{count === 1 ? "" : "s"} due for review today
+            <span className="font-mono text-[#22d3ee]">{count}</span> pattern{count === 1 ? "" : "s"} to practice today
           </p>
           <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
-            Recall keeps the bank solvent. Clear the queue before new problems.
+            Refresh · fresh problems · cold re-solve. Pattern recognition is what transfers.
           </p>
         </div>
         <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[#22d3ee] group-hover:translate-x-0.5 transition-all shrink-0" />
