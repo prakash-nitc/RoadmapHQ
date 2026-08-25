@@ -447,6 +447,69 @@ export async function getPatternDueQueue() {
   };
 }
 
+// All patterns for the picker: due ones + any you want to practice on demand.
+export async function getPatternPracticeData() {
+  const now = new Date();
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
+
+  const [patterns, settings] = await Promise.all([
+    prisma.pattern.findMany({
+      include: {
+        problems: {
+          where: { tier: "CORE" },
+          select: { id: true, title: true, url: true, anchorInsight: true, difficulty: true, status: true },
+          orderBy: { title: "asc" },
+        },
+        notes: { select: { keyLearnings: true } },
+      },
+      orderBy: { order: "asc" },
+    }),
+    prisma.userSettings.findFirst({ where: { id: "default" } }),
+  ]);
+
+  const mapped = patterns.map((p) => {
+    const isDue = p.revStep >= 1 && !!p.revNextDueAt && p.revNextDueAt <= endOfToday;
+    const status: "due" | "shaky" | "solid" | "unstarted" =
+      p.revStep === 0
+        ? "unstarted"
+        : isDue
+        ? "due"
+        : p.revFailCount > 0
+        ? "shaky"
+        : "solid";
+    return {
+      id: p.id,
+      name: p.name,
+      order: p.order,
+      revStep: p.revStep,
+      revFailCount: p.revFailCount,
+      propeersTopic: p.propeersTopic,
+      propeersSub: p.propeersSub,
+      notesHint: p.notes?.keyLearnings ?? null,
+      isDue,
+      status,
+      nextDueAt: p.revNextDueAt,
+      daysOverdue: p.revNextDueAt && isDue
+        ? Math.max(0, Math.floor((now.getTime() - p.revNextDueAt.getTime()) / 86400000))
+        : 0,
+      core: p.problems,
+    };
+  });
+
+  const dueCount = mapped.filter((p) => p.isDue).length;
+  const upcoming = mapped
+    .filter((p) => p.revStep >= 1 && !p.isDue && p.nextDueAt)
+    .sort((a, b) => new Date(a.nextDueAt!).getTime() - new Date(b.nextDueAt!).getTime())[0];
+
+  return {
+    propeersUrl: settings?.propeersUrl ?? null,
+    dueCount,
+    nextDueAt: upcoming?.nextDueAt ?? null,
+    patterns: mapped,
+  };
+}
+
 // Advance a pattern's practice schedule after a session.
 export async function completePatternPractice(
   patternId: string,

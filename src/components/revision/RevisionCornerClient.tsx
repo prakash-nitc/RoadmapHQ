@@ -1,62 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { format } from "date-fns";
 import {
   Sparkles,
-  Stethoscope,
-  AlertTriangle,
-  TrendingDown,
-  TrendingUp,
-  Minus,
-  Play,
-  RotateCcw,
-  BookOpen,
-  ExternalLink,
-  Zap,
   ArrowRight,
   CheckCircle2,
+  Play,
+  ExternalLink,
+  ChevronDown,
+  Lightbulb,
 } from "lucide-react";
-import { useTransition } from "react";
-import { format } from "date-fns";
-import { DamageAssessment } from "./DamageAssessment";
 import { PatternPractice } from "./PatternPractice";
 import { savePropeersUrl } from "@/lib/revision-actions";
-
-interface Overview {
-  hasInProgress: boolean;
-  inProgressId: string | null;
-  latest: {
-    id: string;
-    date: string | Date | null;
-    rates: {
-      patternId: string;
-      patternName: string;
-      order: number;
-      total: number;
-      failed: number;
-      failRate: number;
-      delta: number | null;
-    }[];
-    overallFailRate: number;
-  } | null;
-  hasPrevious: boolean;
-  solvedPlus: number;
-  retained: number;
-  retentionPct: number;
-  coreCount: number;
-  supportCount: number;
-  learningMode: { id: string; title: string; patternName: string; failCount: number; tier: string | null }[];
-}
-
-interface AnchorPattern {
-  id: string;
-  name: string;
-  order: number;
-  core: { id: string; title: string; anchorInsight: string | null; status: string; difficulty: string | null; url: string; failCount: number }[];
-  support: { id: string; title: string; anchorInsight: string | null; status: string; difficulty: string | null; url: string; failCount: number }[];
-}
 
 interface CoreProblem {
   id: string;
@@ -67,7 +24,7 @@ interface CoreProblem {
   status: string;
 }
 
-interface DuePattern {
+interface PPattern {
   id: string;
   name: string;
   order: number;
@@ -76,37 +33,49 @@ interface DuePattern {
   propeersTopic: string | null;
   propeersSub: string | null;
   notesHint: string | null;
+  isDue: boolean;
+  status: "due" | "shaky" | "solid" | "unstarted";
+  nextDueAt: string | Date | null;
   daysOverdue: number;
   core: CoreProblem[];
 }
 
-interface PatternQueue {
-  total: number;
+interface Data {
   propeersUrl: string | null;
+  dueCount: number;
   nextDueAt: string | Date | null;
-  patterns: DuePattern[];
+  patterns: PPattern[];
 }
 
-function rateColor(rate: number) {
-  if (rate >= 60) return "#ef4444";
-  if (rate >= 30) return "#f59e0b";
-  return "#10b981";
-}
+const STATUS_STYLE: Record<PPattern["status"], { label: string; color: string; bg: string }> = {
+  due: { label: "Due", color: "#22d3ee", bg: "rgba(34,211,238,0.16)" },
+  shaky: { label: "Shaky", color: "#fbbf24", bg: "rgba(245,158,11,0.14)" },
+  solid: { label: "Solid", color: "#34d399", bg: "rgba(16,185,129,0.14)" },
+  unstarted: { label: "Not started", color: "#6b6b7a", bg: "rgba(255,255,255,0.05)" },
+};
 
-export function RevisionCornerClient({
-  overview,
-  anchors,
-  patternQueue,
-}: {
-  overview: Overview;
-  anchors: AnchorPattern[];
-  patternQueue: PatternQueue;
-}) {
+export function RevisionCornerClient({ data }: { data: Data }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"home" | "assessment" | "review">("home");
-  const [tab, setTab] = useState<"today" | "tools">("today");
-  const [propeersInput, setPropeersInput] = useState(patternQueue.propeersUrl ?? "");
+  const [reviewSet, setReviewSet] = useState<PPattern[] | null>(null);
+  const [propeersInput, setPropeersInput] = useState(data.propeersUrl ?? "");
   const [savingUrl, startSaveUrl] = useTransition();
+
+  if (reviewSet) {
+    return (
+      <PatternPractice
+        patterns={reviewSet}
+        propeersUrl={data.propeersUrl}
+        onExit={() => {
+          setReviewSet(null);
+          router.refresh();
+        }}
+      />
+    );
+  }
+
+  const dueList = data.patterns.filter((p) => p.isDue);
+  const solid = data.patterns.filter((p) => p.status === "solid").length;
+  const shaky = data.patterns.filter((p) => p.status === "shaky").length;
 
   const saveUrl = () => {
     startSaveUrl(async () => {
@@ -115,34 +84,8 @@ export function RevisionCornerClient({
     });
   };
 
-  if (mode === "assessment") {
-    return (
-      <DamageAssessment
-        onExit={() => {
-          setMode("home");
-          router.refresh();
-        }}
-      />
-    );
-  }
-
-  if (mode === "review") {
-    return (
-      <PatternPractice
-        patterns={patternQueue.patterns}
-        propeersUrl={patternQueue.propeersUrl}
-        onExit={() => {
-          setMode("home");
-          router.refresh();
-        }}
-      />
-    );
-  }
-
-  const usablePct = overview.retentionPct;
-
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
         <p className="eyebrow flex items-center gap-1.5 mb-1">
@@ -151,432 +94,124 @@ export function RevisionCornerClient({
         </p>
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Revision Corner</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1.5 max-w-2xl">
-          Test yourself from memory, on a schedule. That&apos;s the whole game.
+          Pick a pattern, refresh it, then solve fresh problems in it. Recognition is what transfers.
         </p>
       </div>
 
-      {/* Tab switcher */}
-      <div className="flex items-center gap-1.5 p-1 rounded-full glass-input w-fit">
-        {([
-          { key: "today", label: "Today" },
-          { key: "tools", label: "Tools" },
-        ] as const).map((t) => {
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                active ? "text-white shadow-lg" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-              }`}
-              style={active ? { background: "linear-gradient(90deg,#22d3ee,#4f8cff)", boxShadow: "0 4px 16px -4px rgba(34,211,238,0.5)" } : undefined}
-            >
-              {t.label}
-              {t.key === "today" && patternQueue.total > 0 && (
-                <span className="ml-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded-full" style={{ background: active ? "rgba(255,255,255,0.22)" : "rgba(34,211,238,0.16)", color: active ? "#fff" : "#22d3ee" }}>
-                  {patternQueue.total}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ═══ TODAY — the simple daily loop (pattern practice) ═══ */}
-      {tab === "today" && (
-        <div className="space-y-4">
-          {patternQueue.total > 0 ? (
-            <div
-              className="rounded-2xl p-6 md:p-8"
-              style={{
-                background: "linear-gradient(135deg, rgba(34,211,238,0.14), rgba(79,140,255,0.08) 60%, transparent), rgba(20,20,30,0.5)",
-                border: "1px solid rgba(34,211,238,0.3)",
-              }}
-            >
-              <div className="text-center">
-                <p className="eyebrow mb-2">Patterns to practice today</p>
-                <div className="text-6xl font-bold font-mono text-[#22d3ee] mb-1">{patternQueue.total}</div>
-                <p className="text-sm text-[var(--color-text-secondary)]">
-                  Refresh → solve 2–3 fresh problems → cold re-solve a CORE anchor
-                </p>
-                <button
-                  onClick={() => setMode("review")}
-                  className="mt-6 inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-white transition-transform hover:scale-105"
-                  style={{ background: "linear-gradient(90deg,#22d3ee,#4f8cff)", boxShadow: "0 8px 24px -6px rgba(34,211,238,0.6)" }}
-                >
-                  Start practice <ArrowRight className="w-5 h-5" />
-                </button>
-                <p className="text-[11px] text-[var(--color-text-muted)] mt-4">
-                  Fresh problems in the pattern build recognition — that&apos;s what an OA actually tests.
-                </p>
-              </div>
-
-              {/* Preview of the patterns */}
-              <div className="mt-6 pt-5 border-t border-[var(--color-border-subtle)] space-y-1.5">
-                {patternQueue.patterns.slice(0, 5).map((p) => (
-                  <div key={p.id} className="flex items-center gap-2 text-xs">
-                    <span className="font-mono text-[var(--color-accent-purple)] shrink-0">#{String(p.order).padStart(2, "0")}</span>
-                    <span className="text-[var(--color-text-primary)] font-medium">{p.name}</span>
-                    {p.propeersTopic && <span className="text-[var(--color-text-muted)] truncate">→ {p.propeersTopic}</span>}
-                    {p.daysOverdue > 0 && <span className="text-[10px] font-mono text-[var(--color-accent-amber)] ml-auto shrink-0">{p.daysOverdue}d overdue</span>}
-                  </div>
-                ))}
-                {patternQueue.total > 5 && (
-                  <p className="text-[10px] text-[var(--color-text-muted)] pt-1">+ {patternQueue.total - 5} more</p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div
-              className="rounded-2xl p-8 text-center"
-              style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.12), transparent 60%), rgba(20,20,30,0.5)", border: "1px solid rgba(16,185,129,0.25)" }}
-            >
-              <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-3" style={{ background: "rgba(16,185,129,0.16)" }}>
-                <CheckCircle2 className="w-7 h-7 text-[var(--color-accent-emerald)]" />
-              </div>
-              <h2 className="text-xl font-bold">No patterns due today</h2>
-              <p className="text-sm text-[var(--color-text-muted)] mt-1.5">
-                {patternQueue.nextDueAt
-                  ? `Next pattern due ${format(new Date(patternQueue.nextDueAt), "MMM d")}.`
-                  : "Solve problems and patterns will enter the practice schedule."}
-              </p>
-            </div>
-          )}
-
-          {/* Propeers link setup (once) */}
-          {!patternQueue.propeersUrl && (
-            <div className="rounded-xl p-4 glass-row">
-              <p className="text-xs font-semibold text-[var(--color-text-primary)] mb-1">Link your Propeers dashboard</p>
-              <p className="text-[11px] text-[var(--color-text-muted)] mb-3">
-                Paste the URL once and each practice session gets a one-click &quot;Open Propeers&quot; button for fresh problems.
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={propeersInput}
-                  onChange={(e) => setPropeersInput(e.target.value)}
-                  placeholder="https://…"
-                  className="glass-input flex-1 px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]"
-                />
-                <button onClick={saveUrl} disabled={savingUrl || !propeersInput} className="px-3 py-2 rounded-lg text-xs font-semibold text-white shrink-0" style={{ background: "linear-gradient(90deg,#22d3ee,#4f8cff)" }}>
-                  {savingUrl ? "Saving…" : "Save"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* One quiet retention line */}
-          <button
-            onClick={() => setTab("tools")}
-            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl glass-row text-left"
-          >
-            <span className="text-xs text-[var(--color-text-secondary)]">
-              <span className="font-mono font-bold text-[var(--color-text-primary)]">{overview.retained}</span> of{" "}
-              <span className="font-mono">{overview.solvedPlus}</span> solved are actually retained ({overview.retentionPct}%)
-            </span>
-            <span className="text-[11px] text-[var(--color-accent-blue)] shrink-0">See the full picture →</span>
-          </button>
-        </div>
-      )}
-
-      {/* ═══ TOOLS — everything advanced, out of the daily path ═══ */}
-      {tab === "tools" && (
-      <div className="space-y-6">
-      {/* Retention hero — the honest headline */}
-      <div
-        className="rounded-2xl p-6 md:p-8 relative overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(34,211,238,0.10), rgba(79,140,255,0.08) 55%, rgba(168,85,247,0.06)), rgba(20,20,30,0.55)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-        }}
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-          <RetentionRing percent={overview.retentionPct} retained={overview.retained} total={overview.solvedPlus} />
-          <div className="flex-1">
-            <p className="eyebrow mb-1">Usable problems</p>
-            <h2 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
-              {overview.retained}{" "}
-              <span className="text-[var(--color-text-secondary)] font-medium">
-                of {overview.solvedPlus} solved are actually retained
-              </span>
-            </h2>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-2 max-w-xl leading-relaxed">
-              &quot;Retained&quot; = passed a notes-closed recall (Revised) or cold re-solved (Mastered).
-              Interviews test the retained set, not the sheet percentage.
-            </p>
-            <div className="flex flex-wrap items-center gap-2 mt-4">
-              <span className="text-xs px-2.5 py-1 rounded-full font-mono" style={{ background: "rgba(79,140,255,0.14)", color: "#7ba9ff" }}>
-                {overview.coreCount} CORE anchors
-              </span>
-              <span className="text-xs px-2.5 py-1 rounded-full font-mono" style={{ background: "rgba(168,85,247,0.14)", color: "#c084fc" }}>
-                {overview.supportCount} SUPPORT
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Learning-mode alert */}
-      {overview.learningMode.length > 0 && (
+      {/* Due today (suggested) */}
+      {data.dueCount > 0 && (
         <div
-          className="rounded-2xl p-5"
-          style={{
-            background: "linear-gradient(90deg, rgba(239,68,68,0.14), rgba(239,68,68,0.03))",
-            border: "1px solid rgba(239,68,68,0.3)",
-          }}
+          className="rounded-2xl p-6"
+          style={{ background: "linear-gradient(135deg, rgba(34,211,238,0.14), rgba(79,140,255,0.08) 60%, transparent), rgba(20,20,30,0.5)", border: "1px solid rgba(34,211,238,0.3)" }}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="w-4 h-4 text-[var(--color-accent-red)]" />
-            <h3 className="text-sm font-bold text-[var(--color-accent-red)]">
-              Return to learning mode — {overview.learningMode.length} concept{overview.learningMode.length === 1 ? "" : "s"} broken
-            </h3>
-          </div>
-          <p className="text-xs text-[var(--color-text-muted)] mb-3">
-            Failed twice or more. Repeated failure means the concept, not the memory, is gone.
-            Stop re-solving — rewatch, reread, work the editorial properly.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {overview.learningMode.map((p) => (
-              <Link
-                key={p.id}
-                href={`/patterns`}
-                className="text-xs px-2.5 py-1 rounded-lg glass-row"
-                title={`${p.patternName} · failed ${p.failCount}x`}
-              >
-                {p.title}
-                <span className="ml-1.5 font-mono text-[var(--color-accent-red)]">×{p.failCount}</span>
-              </Link>
-            ))}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex-1">
+              <p className="eyebrow mb-1">Suggested for today</p>
+              <h2 className="text-xl font-bold">
+                <span className="text-[#22d3ee] font-mono">{data.dueCount}</span>{" "}
+                <span className="text-[var(--color-text-secondary)] font-medium">pattern{data.dueCount === 1 ? "" : "s"} due for practice</span>
+              </h2>
+            </div>
+            <button
+              onClick={() => setReviewSet(dueList)}
+              className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white transition-transform hover:scale-105"
+              style={{ background: "linear-gradient(90deg,#22d3ee,#4f8cff)", boxShadow: "0 6px 20px -6px rgba(34,211,238,0.5)" }}
+            >
+              Practice all due <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
 
-      {/* Damage Assessment */}
-      <div className="section-card p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(34,211,238,0.14)" }}>
-              <Stethoscope className="w-5 h-5 text-[#22d3ee]" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Damage assessment</h2>
-              <p className="text-xs text-[var(--color-text-muted)] mt-0.5 max-w-lg">
-                One 40-minute pass: a 60-second recall on every solved problem, pattern by pattern.
-                Mark pass or fail — <span className="text-[var(--color-text-secondary)]">fix nothing</span>.
-                The output is a per-pattern failure map: your repair queue and your honest baseline.
-              </p>
-            </div>
+      {/* Propeers setup (once) */}
+      {!data.propeersUrl && (
+        <div className="rounded-xl p-4 glass-row">
+          <p className="text-xs font-semibold text-[var(--color-text-primary)] mb-1">Link your Propeers dashboard</p>
+          <p className="text-[11px] text-[var(--color-text-muted)] mb-3">
+            Paste it once — every session gets a one-click &quot;Open Propeers&quot; button for fresh problems.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={propeersInput}
+              onChange={(e) => setPropeersInput(e.target.value)}
+              placeholder="https://…"
+              className="glass-input flex-1 px-3 py-2 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)]"
+            />
+            <button onClick={saveUrl} disabled={savingUrl || !propeersInput} className="px-3 py-2 rounded-lg text-xs font-semibold text-white shrink-0" style={{ background: "linear-gradient(90deg,#22d3ee,#4f8cff)" }}>
+              {savingUrl ? "Saving…" : "Save"}
+            </button>
           </div>
-          <button
-            onClick={() => setMode("assessment")}
-            className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-transform hover:scale-105"
-            style={{
-              background: overview.hasInProgress
-                ? "linear-gradient(90deg, #f59e0b, #d97706)"
-                : "linear-gradient(90deg, #22d3ee, #4f8cff)",
-              boxShadow: "0 6px 20px -6px rgba(34,211,238,0.5)",
-            }}
-          >
-            {overview.hasInProgress ? <><RotateCcw className="w-4 h-4" /> Resume</> : overview.latest ? <><RotateCcw className="w-4 h-4" /> Re-run</> : <><Play className="w-4 h-4" /> Start assessment</>}
-          </button>
         </div>
+      )}
 
-        {overview.latest ? (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="eyebrow">Latest failure map</p>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-[var(--color-text-muted)]">Overall decay</span>
-                <span className="font-mono font-bold" style={{ color: rateColor(overview.latest.overallFailRate) }}>
-                  {overview.latest.overallFailRate}%
-                </span>
-              </div>
-            </div>
-            <div className="space-y-2.5">
-              {overview.latest.rates.map((r) => (
-                <div key={r.patternId} className="flex items-center gap-3">
-                  <span className="text-sm text-[var(--color-text-primary)] w-40 sm:w-48 shrink-0 truncate">
-                    {r.patternName}
-                  </span>
-                  <div className="flex-1 h-2 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${r.failRate}%`, background: rateColor(r.failRate), boxShadow: `0 0 8px ${rateColor(r.failRate)}66` }}
-                    />
-                  </div>
-                  <span className="text-xs font-mono font-bold w-10 text-right" style={{ color: rateColor(r.failRate) }}>
-                    {r.failRate}%
-                  </span>
-                  <span className="w-14 text-right shrink-0">
-                    {r.delta === null ? (
-                      <span className="text-[10px] text-[var(--color-text-muted)]">new</span>
-                    ) : r.delta < 0 ? (
-                      <span className="text-[10px] font-mono text-[var(--color-accent-emerald)] inline-flex items-center gap-0.5">
-                        <TrendingDown className="w-3 h-3" />{r.delta}
-                      </span>
-                    ) : r.delta > 0 ? (
-                      <span className="text-[10px] font-mono text-[var(--color-accent-red)] inline-flex items-center gap-0.5">
-                        <TrendingUp className="w-3 h-3" />+{r.delta}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-mono text-[var(--color-text-muted)] inline-flex items-center gap-0.5">
-                        <Minus className="w-3 h-3" />0
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-[10px] text-[var(--color-text-muted)] font-mono w-12 text-right shrink-0">
-                    {r.failed}/{r.total}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-[var(--color-text-muted)] mt-4">
-              Sorted by decay. The delta column vs your previous assessment is the only progress metric
-              that means anything — re-run every ~6 weeks.
-            </p>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-sm text-[var(--color-text-muted)]">
-            No assessment yet. Run one to map what&apos;s decayed — it turns a scary &quot;{usablePct}% retained&quot;
-            into a concrete per-pattern repair plan.
-          </div>
-        )}
-      </div>
-
-      {/* Anchor list — reference */}
+      {/* Pick any pattern */}
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <BookOpen className="w-4 h-4 text-[var(--color-accent-blue)]" />
-          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">The anchor list</h2>
-          <span className="eyebrow ml-1">CORE insights</span>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Choose a pattern to revise</h2>
+          <span className="text-[11px] text-[var(--color-text-muted)] font-mono">{solid} solid · {shaky} shaky · {data.dueCount} due</span>
         </div>
-        <p className="text-xs text-[var(--color-text-muted)] mb-4 max-w-2xl">
-          Each pattern has 3–5 CORE problems that regenerate the rest. Read the name, say the insight
-          out loud, then check yourself.
-        </p>
-        <div className="space-y-3">
-          {anchors.map((p) => (
-            <AnchorPatternBlock key={p.id} pattern={p} />
+        <div className="space-y-2.5">
+          {data.patterns.map((p) => (
+            <PatternRow key={p.id} pattern={p} onPractice={() => setReviewSet([p])} />
           ))}
         </div>
       </div>
-      </div>
-      )}
     </div>
   );
 }
 
-function AnchorPatternBlock({ pattern }: { pattern: AnchorPattern }) {
+function PatternRow({ pattern: p, onPractice }: { pattern: PPattern; onPractice: () => void }) {
   const [open, setOpen] = useState(false);
+  const s = STATUS_STYLE[p.status];
   return (
     <div className="section-card overflow-hidden">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[rgba(255,255,255,0.02)]"
-      >
-        <span className="text-xs font-mono font-bold text-[var(--color-accent-purple)]">
-          #{String(pattern.order).padStart(2, "0")}
+      <div className="flex items-center gap-3 px-4 py-3.5">
+        <span className="text-xs font-mono font-bold text-[var(--color-accent-purple)] shrink-0">
+          #{String(p.order).padStart(2, "0")}
         </span>
-        <span className="text-sm font-semibold text-[var(--color-text-primary)] flex-1">{pattern.name}</span>
-        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full" style={{ background: "rgba(79,140,255,0.14)", color: "#7ba9ff" }}>
-          {pattern.core.length} core
+        <button onClick={() => setOpen((o) => !o)} className="flex-1 min-w-0 flex items-center gap-2 text-left">
+          <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{p.name}</span>
+          {p.core.length > 0 && (
+            <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform ${open ? "rotate-180" : ""}`} />
+          )}
+        </button>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0" style={{ color: s.color, background: s.bg }}>
+          {s.label}{p.daysOverdue > 0 ? ` · ${p.daysOverdue}d` : ""}
         </span>
-        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full" style={{ background: "rgba(168,85,247,0.12)", color: "#c084fc" }}>
-          {pattern.support.length} support
-        </span>
-        <span className={`text-[var(--color-text-muted)] transition-transform ${open ? "rotate-90" : ""}`}>›</span>
-      </button>
-      {open && (
-        <div className="px-5 pb-5 space-y-2">
-          {[...pattern.core, ...pattern.support].map((pr) => (
-            <AnchorRow key={pr.id} problem={pr} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AnchorRow({
-  problem,
-}: {
-  problem: { id: string; title: string; anchorInsight: string | null; status: string; tier?: string | null; difficulty: string | null; url: string; failCount: number };
-}) {
-  const [revealed, setRevealed] = useState(false);
-  const isCore = (problem as { tier?: string | null }).tier === "CORE";
-  return (
-    <div className="glass-row rounded-lg p-3">
-      <div className="flex items-center gap-2">
-        <span
-          className="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0"
-          style={
-            isCore
-              ? { background: "rgba(79,140,255,0.16)", color: "#7ba9ff" }
-              : { background: "rgba(168,85,247,0.14)", color: "#c084fc" }
-          }
+        <button
+          onClick={onPractice}
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-transform hover:scale-105"
+          style={{ background: p.isDue ? "linear-gradient(90deg,#22d3ee,#4f8cff)" : "rgba(255,255,255,0.08)" }}
         >
-          {isCore ? "CORE" : "SUPPORT"}
-        </span>
-        <span className="text-sm font-medium text-[var(--color-text-primary)] flex-1 truncate">{problem.title}</span>
-        {problem.failCount >= 2 && (
-          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 inline-flex items-center gap-0.5" style={{ background: "rgba(239,68,68,0.16)", color: "#f87171" }}>
-            <Zap className="w-2.5 h-2.5" /> RELEARN
-          </span>
-        )}
-        <a href={problem.url} target="_blank" rel="noopener noreferrer" className="p-1 rounded text-[var(--color-text-muted)] hover:text-white shrink-0">
-          <ExternalLink className="w-3.5 h-3.5" />
-        </a>
+          <Play className="w-3 h-3" /> Practice
+        </button>
       </div>
-      {problem.anchorInsight && (
-        <div className="mt-2">
-          {revealed ? (
-            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{problem.anchorInsight}</p>
-          ) : (
-            <button
-              onClick={() => setRevealed(true)}
-              className="text-[11px] font-medium text-[var(--color-accent-blue)] hover:underline"
-            >
-              Say it out loud, then reveal the insight →
-            </button>
+
+      {open && (
+        <div className="px-4 pb-4 space-y-2">
+          {p.propeersTopic && (
+            <div className="text-[11px] text-[var(--color-text-muted)]">
+              Fresh problems: <span className="text-[var(--color-text-secondary)]">{p.propeersTopic} › {p.propeersSub}</span>
+            </div>
+          )}
+          {p.core.filter((c) => c.anchorInsight).map((c) => (
+            <div key={c.id} className="glass-row rounded-lg p-2.5">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="w-3 h-3 text-[var(--color-accent-amber)] shrink-0" />
+                <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent-blue)] flex-1 truncate">
+                  {c.title}
+                </a>
+                <ExternalLink className="w-3 h-3 text-[var(--color-text-muted)] shrink-0" />
+              </div>
+              <p className="text-[11px] text-[var(--color-text-secondary)] mt-1 leading-relaxed pl-5">{c.anchorInsight}</p>
+            </div>
+          ))}
+          {p.core.filter((c) => c.anchorInsight).length === 0 && (
+            <p className="text-[11px] text-[var(--color-text-muted)]">No CORE insights tagged for this pattern yet.</p>
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function RetentionRing({ percent, retained, total }: { percent: number; retained: number; total: number }) {
-  const size = 130;
-  const stroke = 11;
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const color = percent >= 60 ? "#10b981" : percent >= 30 ? "#f59e0b" : "#ef4444";
-  return (
-    <div className="relative shrink-0 mx-auto sm:mx-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${circ * (percent / 100)} ${circ}`}
-          style={{ filter: `drop-shadow(0 0 10px ${color}80)`, transition: "stroke-dasharray 0.8s ease" }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold font-mono" style={{ color }}>
-          {percent}<span className="text-lg">%</span>
-        </span>
-        <span className="eyebrow mt-0.5">retained</span>
-        <span className="text-[10px] font-mono text-[var(--color-text-muted)] mt-0.5">{retained}/{total}</span>
-      </div>
     </div>
   );
 }
