@@ -2,7 +2,6 @@ import { format } from "date-fns";
 import { getDashboardData } from "@/lib/actions";
 import { MissionBriefing } from "@/components/dashboard/MissionBriefing";
 import { DailyMission } from "@/components/dashboard/DailyMission";
-import { RevisionQueue } from "@/components/dashboard/RevisionQueue";
 import { MonthlyStreakCalendar } from "@/components/dashboard/MonthlyStreakCalendar";
 import { PatternReadiness } from "@/components/dashboard/PatternReadiness";
 import { StreakWarning } from "@/components/dashboard/StreakWarning";
@@ -95,10 +94,9 @@ export default async function Dashboard() {
         targetDate={data.targetDate}
       />
 
-      {/* Today's mission + Revision engine | compact study calendar.
-          Calendar lives in the right rail like a widget, not a full panel. */}
+      {/* Today's mission | compact study calendar. */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-        <div className="lg:col-span-2 space-y-10">
+        <div className="lg:col-span-2">
           <div className="section-card">
             <DailyMission
               nextVideo={data.nextVideo}
@@ -108,7 +106,6 @@ export default async function Dashboard() {
               embedded
             />
           </div>
-          <RevisionQueue revisions={data.todayRevisions} />
         </div>
 
         <div className="lg:col-span-1">

@@ -15,7 +15,6 @@ import {
   BookOpen,
   ExternalLink,
   Zap,
-  CalendarClock,
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
@@ -98,6 +97,7 @@ export function RevisionCornerClient({
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"home" | "assessment" | "review">("home");
+  const [tab, setTab] = useState<"today" | "tools">("today");
 
   if (mode === "assessment") {
     return (
@@ -125,7 +125,7 @@ export function RevisionCornerClient({
   const usablePct = overview.retentionPct;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div>
         <p className="eyebrow flex items-center gap-1.5 mb-1">
@@ -134,64 +134,116 @@ export function RevisionCornerClient({
         </p>
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Revision Corner</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1.5 max-w-2xl">
-          Solving builds the bank; revision keeps it solvent. A problem you can&apos;t re-solve
-          cold is worth zero — this is where you find out what survived, and repair what didn&apos;t.
+          Test yourself from memory, on a schedule. That&apos;s the whole game.
         </p>
       </div>
 
-      {/* Due today — the daily driver */}
-      <div
-        className="rounded-2xl p-6 relative overflow-hidden"
-        style={{
-          background: dueQueue.total > 0
-            ? "linear-gradient(135deg, rgba(34,211,238,0.14), rgba(79,140,255,0.08) 60%, transparent), rgba(20,20,30,0.5)"
-            : "linear-gradient(135deg, rgba(16,185,129,0.12), transparent 60%), rgba(20,20,30,0.5)",
-          border: `1px solid ${dueQueue.total > 0 ? "rgba(34,211,238,0.3)" : "rgba(16,185,129,0.25)"}`,
-        }}
-      >
-        {dueQueue.total > 0 ? (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "rgba(34,211,238,0.16)" }}>
-                <CalendarClock className="w-7 h-7 text-[#22d3ee]" />
-              </div>
-              <div>
-                <p className="eyebrow mb-0.5">Due today</p>
-                <h2 className="text-2xl font-bold">
-                  <span className="text-[#22d3ee] font-mono">{dueQueue.total}</span>{" "}
-                  <span className="text-[var(--color-text-secondary)] font-medium">to review</span>
-                </h2>
-                <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                  {dueQueue.recallCount} recall{dueQueue.recallCount === 1 ? "" : "s"} · {dueQueue.coldCount} cold re-solve{dueQueue.coldCount === 1 ? "" : "s"} · sorted most-overdue first
-                </p>
-              </div>
-            </div>
+      {/* Tab switcher */}
+      <div className="flex items-center gap-1.5 p-1 rounded-full glass-input w-fit">
+        {([
+          { key: "today", label: "Today" },
+          { key: "tools", label: "Tools" },
+        ] as const).map((t) => {
+          const active = tab === t.key;
+          return (
             <button
-              onClick={() => setMode("review")}
-              className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white transition-transform hover:scale-105"
-              style={{ background: "linear-gradient(90deg,#22d3ee,#4f8cff)", boxShadow: "0 6px 20px -6px rgba(34,211,238,0.5)" }}
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                active ? "text-white shadow-lg" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+              }`}
+              style={active ? { background: "linear-gradient(90deg,#22d3ee,#4f8cff)", boxShadow: "0 4px 16px -4px rgba(34,211,238,0.5)" } : undefined}
             >
-              Start review <ArrowRight className="w-4 h-4" />
+              {t.label}
+              {t.key === "today" && dueQueue.total > 0 && (
+                <span className="ml-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded-full" style={{ background: active ? "rgba(255,255,255,0.22)" : "rgba(34,211,238,0.16)", color: active ? "#fff" : "#22d3ee" }}>
+                  {dueQueue.total}
+                </span>
+              )}
             </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(16,185,129,0.16)" }}>
-              <CheckCircle2 className="w-6 h-6 text-[var(--color-accent-emerald)]" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold">Queue clear for today</h2>
-              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                {dueQueue.nextDueAt
-                  ? `Next review due ${format(new Date(dueQueue.nextDueAt), "MMM d")}.`
-                  : "Solve problems to start building your review pipeline."}{" "}
-                Recall keeps the bank solvent — a maintained day.
-              </p>
-            </div>
-          </div>
-        )}
+          );
+        })}
       </div>
 
+      {/* ═══ TODAY — the simple daily loop ═══ */}
+      {tab === "today" && (
+        <div className="space-y-4">
+          {dueQueue.total > 0 ? (
+            <div
+              className="rounded-2xl p-6 md:p-8"
+              style={{
+                background: "linear-gradient(135deg, rgba(34,211,238,0.14), rgba(79,140,255,0.08) 60%, transparent), rgba(20,20,30,0.5)",
+                border: "1px solid rgba(34,211,238,0.3)",
+              }}
+            >
+              <div className="text-center">
+                <p className="eyebrow mb-2">Today&apos;s review</p>
+                <div className="text-6xl font-bold font-mono text-[#22d3ee] mb-1">{dueQueue.total}</div>
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  {dueQueue.recallCount} to recall · {dueQueue.coldCount} to re-solve
+                </p>
+                <button
+                  onClick={() => setMode("review")}
+                  className="mt-6 inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-white transition-transform hover:scale-105"
+                  style={{ background: "linear-gradient(90deg,#22d3ee,#4f8cff)", boxShadow: "0 8px 24px -6px rgba(34,211,238,0.6)" }}
+                >
+                  Start review <ArrowRight className="w-5 h-5" />
+                </button>
+                <p className="text-[11px] text-[var(--color-text-muted)] mt-4">
+                  Read the title, try to recall the approach, mark got-it or missed. ~60 seconds each.
+                </p>
+              </div>
+
+              {/* Small preview of what's coming */}
+              <div className="mt-6 pt-5 border-t border-[var(--color-border-subtle)] space-y-1.5">
+                {dueQueue.items.slice(0, 4).map((it) => (
+                  <div key={it.id} className="flex items-center gap-2 text-xs">
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0" style={it.mode === "COLD" ? { background: "rgba(79,140,255,0.16)", color: "#7ba9ff" } : { background: "rgba(34,211,238,0.14)", color: "#22d3ee" }}>
+                      {it.mode === "COLD" ? "SOLVE" : "RECALL"}
+                    </span>
+                    <span className="text-[var(--color-text-secondary)] truncate">{it.title}</span>
+                    <span className="text-[var(--color-text-muted)] ml-auto shrink-0">{it.patternName}</span>
+                  </div>
+                ))}
+                {dueQueue.total > 4 && (
+                  <p className="text-[10px] text-[var(--color-text-muted)] pt-1">+ {dueQueue.total - 4} more</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div
+              className="rounded-2xl p-8 text-center"
+              style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.12), transparent 60%), rgba(20,20,30,0.5)", border: "1px solid rgba(16,185,129,0.25)" }}
+            >
+              <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-3" style={{ background: "rgba(16,185,129,0.16)" }}>
+                <CheckCircle2 className="w-7 h-7 text-[var(--color-accent-emerald)]" />
+              </div>
+              <h2 className="text-xl font-bold">You&apos;re clear for today</h2>
+              <p className="text-sm text-[var(--color-text-muted)] mt-1.5">
+                {dueQueue.nextDueAt
+                  ? `Next review due ${format(new Date(dueQueue.nextDueAt), "MMM d")}.`
+                  : "Solve problems and they'll show up here for revision."}
+              </p>
+            </div>
+          )}
+
+          {/* One quiet retention line */}
+          <button
+            onClick={() => setTab("tools")}
+            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl glass-row text-left"
+          >
+            <span className="text-xs text-[var(--color-text-secondary)]">
+              <span className="font-mono font-bold text-[var(--color-text-primary)]">{overview.retained}</span> of{" "}
+              <span className="font-mono">{overview.solvedPlus}</span> solved are actually retained ({overview.retentionPct}%)
+            </span>
+            <span className="text-[11px] text-[var(--color-accent-blue)] shrink-0">See the full picture →</span>
+          </button>
+        </div>
+      )}
+
+      {/* ═══ TOOLS — everything advanced, out of the daily path ═══ */}
+      {tab === "tools" && (
+      <div className="space-y-6">
       {/* Retention hero — the honest headline */}
       <div
         className="rounded-2xl p-6 md:p-8 relative overflow-hidden"
@@ -204,7 +256,7 @@ export function RevisionCornerClient({
         }}
       >
         <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-          <RetentionRing percent={usablePct} retained={overview.retained} total={overview.solvedPlus} />
+          <RetentionRing percent={overview.retentionPct} retained={overview.retained} total={overview.solvedPlus} />
           <div className="flex-1">
             <p className="eyebrow mb-1">Usable problems</p>
             <h2 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
@@ -215,8 +267,7 @@ export function RevisionCornerClient({
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)] mt-2 max-w-xl leading-relaxed">
               &quot;Retained&quot; = passed a notes-closed recall (Revised) or cold re-solved (Mastered).
-              Interviews test the retained set, not the sheet percentage. Nobody asks how many you solved —
-              they hand you one and watch.
+              Interviews test the retained set, not the sheet percentage.
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-4">
               <span className="text-xs px-2.5 py-1 rounded-full font-mono" style={{ background: "rgba(79,140,255,0.14)", color: "#7ba9ff" }}>
@@ -357,16 +408,16 @@ export function RevisionCornerClient({
         )}
       </div>
 
-      {/* Anchor list — the daily driver */}
+      {/* Anchor list — reference */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <BookOpen className="w-4 h-4 text-[var(--color-accent-blue)]" />
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">The anchor list</h2>
-          <span className="eyebrow ml-1">your daily driver</span>
+          <span className="eyebrow ml-1">CORE insights</span>
         </div>
         <p className="text-xs text-[var(--color-text-muted)] mb-4 max-w-2xl">
-          Each pattern has 3–5 CORE problems that regenerate the rest. Own the CORE (cold re-solve level),
-          keep SUPPORT at recall level. Read the name, say the insight out loud, then check yourself.
+          Each pattern has 3–5 CORE problems that regenerate the rest. Read the name, say the insight
+          out loud, then check yourself.
         </p>
         <div className="space-y-3">
           {anchors.map((p) => (
@@ -374,6 +425,8 @@ export function RevisionCornerClient({
           ))}
         </div>
       </div>
+      </div>
+      )}
     </div>
   );
 }

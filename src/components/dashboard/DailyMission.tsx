@@ -108,7 +108,7 @@ export function DailyMission({
           target: totalRevs,
           unit: "problems",
           color: "var(--color-accent-amber)",
-          link: revisionsDue > 0 ? "/revisions" : undefined,
+          link: revisionsDue > 0 ? "/revision" : undefined,
         }
       : {
           key: "revise",
