@@ -8,6 +8,7 @@ import {
   Code2,
   PlayCircle,
   RotateCcw,
+  BrainCircuit,
   BarChart3,
   CalendarCheck,
   BookOpen,
@@ -24,6 +25,7 @@ const primaryNav = [
   { href: "/patterns", label: "Patterns", icon: Layers },
   { href: "/problems", label: "Problems", icon: Code2 },
   { href: "/videos", label: "Videos", icon: PlayCircle },
+  { href: "/revision", label: "Revision Corner", icon: BrainCircuit },
   { href: "/revisions", label: "Revisions", icon: RotateCcw },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/review", label: "Weekly review", icon: CalendarCheck },
@@ -48,8 +50,12 @@ export function Sidebar({
   const pathname = usePathname();
 
   const renderLink = (item: (typeof primaryNav)[number]) => {
+    // Exact match or a nested route (href + "/..."), so /revision and
+    // /revisions don't both light up.
     const isActive =
-      item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+      item.href === "/"
+        ? pathname === "/"
+        : pathname === item.href || pathname.startsWith(item.href + "/");
     const Icon = item.icon;
     return (
       <Link

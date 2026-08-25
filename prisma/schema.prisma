@@ -56,8 +56,42 @@ model Problem {
   isHomework    Boolean  @default(false)
   isChallenge   Boolean  @default(false)
 
-  pattern   Pattern    @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  // ─── Revision protocol (DSA Revision System) ───────────────
+  tier          String?  // CORE | SUPPORT — anchor tiering from Section 9
+  anchorInsight String?  // the one insight to state out loud (CORE problems)
+  failCount     Int      @default(0)  // consecutive recall/re-solve failures; >=2 = learning mode
+  lastReviewedAt DateTime? // drives forgiving, elapsed-interval scheduling
+  mixedSetPassed Boolean @default(false) // passed in an untagged mixed set → eligible for MASTERED
+
+  pattern   Pattern            @relation(fields: [patternId], references: [id], onDelete: Cascade)
   revisions Revision[]
+  assessmentResults AssessmentResult[]
+}
+
+// ─── Damage Assessment (Section 4) ───────────────────────────
+// A dated diagnostic snapshot: 60-second recall across solved problems,
+// producing a per-pattern failure rate. Re-run every ~6 weeks; the delta
+// between assessments is the real progress metric.
+model Assessment {
+  id          String    @id @default(cuid())
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  note        String?
+
+  results AssessmentResult[]
+}
+
+model AssessmentResult {
+  id           String  @id @default(cuid())
+  assessmentId String
+  problemId    String
+  patternId    String  // denormalised for fast per-pattern rollups
+  passed       Boolean
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  problem    Problem    @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, problemId])
 }
 
 // ─── Spaced Repetition Revisions ─────────────────────────────
