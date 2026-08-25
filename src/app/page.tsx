@@ -12,6 +12,7 @@ import { TomorrowPreview } from "@/components/dashboard/TomorrowPreview";
 import { DailyCelebration } from "@/components/dashboard/DailyCelebration";
 import { WeeklyReviewBanner } from "@/components/dashboard/WeeklyReviewBanner";
 import { PlacementCountdown } from "@/components/dashboard/PlacementCountdown";
+import { RevisionDueNudge } from "@/components/dashboard/RevisionDueNudge";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,9 @@ export default async function Dashboard() {
         problemsPerDay={data.problemsPerDay}
         targetPerDay={data.targetPerDay}
       />
+
+      {/* Daily revision nudge — clear the recall queue first */}
+      <RevisionDueNudge />
 
       {/* Comeback flow takes priority if you've been away */}
       <ComebackCard

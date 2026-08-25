@@ -2,6 +2,35 @@
 
 import { prisma } from "@/lib/db";
 
+// ─── The elapsed-interval schedule (Section 6) ─────────────────
+// Absolute plan from Day 0: recall@1, recall@4, cold@10, cold@25, mixed@~monthly.
+// We store a step (1..5) and anchor the next due date to the ACTUAL review
+// date, so a missed day just shifts the chain forward — it never bunches up
+// or breaks. Overdue items surface at the top of the queue.
+type ReviewMode = "RECALL" | "SKELETON" | "COLD" | "MIXED";
+
+const STEP_MODE: Record<number, ReviewMode> = {
+  1: "RECALL",
+  2: "RECALL",
+  3: "COLD",
+  4: "COLD",
+  5: "MIXED",
+};
+
+// Days until the NEXT review after completing the given step (advancing +1).
+const INTERVAL_AFTER_STEP: Record<number, number> = {
+  0: 1, // just solved -> first recall tomorrow
+  1: 3, // recall@1 -> recall@4
+  2: 6, // recall@4 -> cold@10
+  3: 15, // cold@10 -> cold@25
+  4: 30, // cold@25 -> monthly mixed
+  5: 30, // maintenance loop
+};
+
+function modeForStep(step: number): ReviewMode {
+  return STEP_MODE[Math.min(Math.max(step, 1), 5)] ?? "RECALL";
+}
+
 // ─── The honest mastery ladder (Section 2) ─────────────────────
 // Levels are a CURRENT claim about ability, not a record of past work.
 // masteryScore is derived from the level so the number reflects retention,
@@ -289,4 +318,140 @@ export async function getAnchorList() {
       core: p.problems.filter((pr) => pr.tier === "CORE"),
       support: p.problems.filter((pr) => pr.tier === "SUPPORT"),
     }));
+}
+
+// ─── The daily due queue (Section 7) ───────────────────────────
+
+export async function getDueQueue() {
+  const now = new Date();
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
+
+  const due = await prisma.problem.findMany({
+    where: {
+      revisionStep: { gte: 1 },
+      nextDueAt: { lte: endOfToday },
+    },
+    include: { pattern: { select: { name: true, order: true } } },
+    orderBy: { nextDueAt: "asc" }, // most overdue first
+  });
+
+  const items = due.map((p) => {
+    const daysOverdue = p.nextDueAt
+      ? Math.max(0, Math.floor((now.getTime() - p.nextDueAt.getTime()) / 86400000))
+      : 0;
+    return {
+      id: p.id,
+      title: p.title,
+      url: p.url,
+      tier: p.tier,
+      anchorInsight: p.anchorInsight,
+      difficulty: p.difficulty,
+      status: p.status,
+      failCount: p.failCount,
+      revisionStep: p.revisionStep,
+      mode: modeForStep(p.revisionStep),
+      patternName: p.pattern.name,
+      patternOrder: p.pattern.order,
+      daysOverdue,
+    };
+  });
+
+  // Next upcoming due date (for the "nothing due" state).
+  const upcoming = await prisma.problem.findFirst({
+    where: { revisionStep: { gte: 1 }, nextDueAt: { gt: endOfToday } },
+    orderBy: { nextDueAt: "asc" },
+    select: { nextDueAt: true },
+  });
+
+  const recallCount = items.filter((i) => i.mode === "RECALL").length;
+  const coldCount = items.filter((i) => i.mode === "COLD").length;
+
+  return {
+    total: items.length,
+    recallCount,
+    coldCount,
+    items,
+    nextDueAt: upcoming?.nextDueAt ?? null,
+  };
+}
+
+// Lightweight count for the dashboard nudge.
+export async function getDueCount() {
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+  return prisma.problem.count({
+    where: { revisionStep: { gte: 1 }, nextDueAt: { lte: endOfToday } },
+  });
+}
+
+// Record a review outcome and advance / reset the schedule.
+//   passed=true            → advance a step, reschedule further out, mark Revised
+//   openedNotes=true       → escape procedure: costs a re-solve (+3d, Attempted)
+//   passed=false           → demote a level, reschedule +3 days
+export async function reviewProblem(
+  problemId: string,
+  mode: ReviewMode,
+  passed: boolean,
+  openedNotes: boolean
+) {
+  const p = await prisma.problem.findUnique({ where: { id: problemId } });
+  if (!p) return;
+  const now = new Date();
+
+  if (openedNotes) {
+    // Reading the solution is not free — reschedule a re-solve 3 days out,
+    // drop to Attempted, back to the start of the recall chain.
+    await prisma.problem.update({
+      where: { id: problemId },
+      data: {
+        status: "ATTEMPTED",
+        masteryScore: MASTERY_FOR.ATTEMPTED,
+        failCount: { increment: 1 },
+        revisionStep: 1,
+        lastReviewedAt: now,
+        nextDueAt: new Date(now.getTime() + 3 * 86400000),
+      },
+    });
+    return;
+  }
+
+  if (passed) {
+    const newStep = Math.min(p.revisionStep + 1, 5);
+    const intervalDays = INTERVAL_AFTER_STEP[p.revisionStep] ?? 30;
+    // A passed cold re-solve on a problem already cleared in a mixed set earns
+    // Mastered; otherwise a clean recall/cold keeps it at Revised.
+    const next =
+      mode === "COLD" && p.mixedSetPassed
+        ? "MASTERED"
+        : p.status === "MASTERED"
+        ? "MASTERED"
+        : "REVISED";
+    await prisma.problem.update({
+      where: { id: problemId },
+      data: {
+        status: next,
+        masteryScore: MASTERY_FOR[next as keyof typeof MASTERY_FOR],
+        failCount: 0,
+        revisionStep: newStep,
+        lastReviewedAt: now,
+        nextDueAt: new Date(now.getTime() + intervalDays * 86400000),
+      },
+    });
+    return;
+  }
+
+  // Plain failure: demote by the ladder, back a step, re-solve 3 days out.
+  const demoted = demote(p.status);
+  await prisma.problem.update({
+    where: { id: problemId },
+    data: {
+      status: demoted,
+      masteryScore: MASTERY_FOR[demoted],
+      failCount: { increment: 1 },
+      revisionStep: Math.max(1, p.revisionStep - 1),
+      lastReviewedAt: now,
+      nextDueAt: new Date(now.getTime() + 3 * 86400000),
+    },
+  });
 }

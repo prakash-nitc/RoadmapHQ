@@ -495,9 +495,14 @@ export async function updateProblemStatus(
   if (status === "SOLVED" && !wasSolved) {
     updateData.solvedAt = new Date();
     updateData.revisionLevel = 1;
-    updateData.masteryScore = 20;
+    updateData.masteryScore = 30; // honest ladder: solved = work done, not retained
 
-    // Schedule first revision (3 days from now)
+    // Enter the Revision Corner pipeline: first recall due tomorrow (Day 1).
+    updateData.revisionStep = 1;
+    updateData.nextDueAt = new Date(Date.now() + 1 * 86400000);
+    updateData.lastReviewedAt = new Date();
+
+    // Legacy /revisions queue (kept for the old widget)
     await prisma.revision.create({
       data: {
         problemId,
@@ -513,6 +518,8 @@ export async function updateProblemStatus(
     updateData.solvedAt = null;
     updateData.revisionLevel = 0;
     updateData.masteryScore = 0;
+    updateData.revisionStep = 0; // exit the pipeline
+    updateData.nextDueAt = null;
     await prisma.revision.deleteMany({
       where: { problemId, status: "PENDING" },
     });

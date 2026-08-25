@@ -62,6 +62,8 @@ model Problem {
   failCount     Int      @default(0)  // consecutive recall/re-solve failures; >=2 = learning mode
   lastReviewedAt DateTime? // drives forgiving, elapsed-interval scheduling
   mixedSetPassed Boolean @default(false) // passed in an untagged mixed set → eligible for MASTERED
+  revisionStep  Int      @default(0)  // 0 = not in pipeline; 1..5 = schedule step (Day 1/4/10/25/monthly)
+  nextDueAt     DateTime? // when the next review is due (elapsed-interval, forgiving of misses)
 
   pattern   Pattern            @relation(fields: [patternId], references: [id], onDelete: Cascade)
   revisions Revision[]

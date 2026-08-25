@@ -15,8 +15,13 @@ import {
   BookOpen,
   ExternalLink,
   Zap,
+  CalendarClock,
+  ArrowRight,
+  CheckCircle2,
 } from "lucide-react";
+import { format } from "date-fns";
 import { DamageAssessment } from "./DamageAssessment";
+import { ReviewSession } from "./ReviewSession";
 
 interface Overview {
   hasInProgress: boolean;
@@ -52,6 +57,30 @@ interface AnchorPattern {
   support: { id: string; title: string; anchorInsight: string | null; status: string; difficulty: string | null; url: string; failCount: number }[];
 }
 
+interface DueItem {
+  id: string;
+  title: string;
+  url: string;
+  tier: string | null;
+  anchorInsight: string | null;
+  difficulty: string | null;
+  status: string;
+  failCount: number;
+  revisionStep: number;
+  mode: "RECALL" | "SKELETON" | "COLD" | "MIXED";
+  patternName: string;
+  patternOrder: number;
+  daysOverdue: number;
+}
+
+interface DueQueue {
+  total: number;
+  recallCount: number;
+  coldCount: number;
+  items: DueItem[];
+  nextDueAt: string | Date | null;
+}
+
 function rateColor(rate: number) {
   if (rate >= 60) return "#ef4444";
   if (rate >= 30) return "#f59e0b";
@@ -61,16 +90,30 @@ function rateColor(rate: number) {
 export function RevisionCornerClient({
   overview,
   anchors,
+  dueQueue,
 }: {
   overview: Overview;
   anchors: AnchorPattern[];
+  dueQueue: DueQueue;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"home" | "assessment">("home");
+  const [mode, setMode] = useState<"home" | "assessment" | "review">("home");
 
   if (mode === "assessment") {
     return (
       <DamageAssessment
+        onExit={() => {
+          setMode("home");
+          router.refresh();
+        }}
+      />
+    );
+  }
+
+  if (mode === "review") {
+    return (
+      <ReviewSession
+        items={dueQueue.items}
         onExit={() => {
           setMode("home");
           router.refresh();
@@ -94,6 +137,59 @@ export function RevisionCornerClient({
           Solving builds the bank; revision keeps it solvent. A problem you can&apos;t re-solve
           cold is worth zero — this is where you find out what survived, and repair what didn&apos;t.
         </p>
+      </div>
+
+      {/* Due today — the daily driver */}
+      <div
+        className="rounded-2xl p-6 relative overflow-hidden"
+        style={{
+          background: dueQueue.total > 0
+            ? "linear-gradient(135deg, rgba(34,211,238,0.14), rgba(79,140,255,0.08) 60%, transparent), rgba(20,20,30,0.5)"
+            : "linear-gradient(135deg, rgba(16,185,129,0.12), transparent 60%), rgba(20,20,30,0.5)",
+          border: `1px solid ${dueQueue.total > 0 ? "rgba(34,211,238,0.3)" : "rgba(16,185,129,0.25)"}`,
+        }}
+      >
+        {dueQueue.total > 0 ? (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "rgba(34,211,238,0.16)" }}>
+                <CalendarClock className="w-7 h-7 text-[#22d3ee]" />
+              </div>
+              <div>
+                <p className="eyebrow mb-0.5">Due today</p>
+                <h2 className="text-2xl font-bold">
+                  <span className="text-[#22d3ee] font-mono">{dueQueue.total}</span>{" "}
+                  <span className="text-[var(--color-text-secondary)] font-medium">to review</span>
+                </h2>
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  {dueQueue.recallCount} recall{dueQueue.recallCount === 1 ? "" : "s"} · {dueQueue.coldCount} cold re-solve{dueQueue.coldCount === 1 ? "" : "s"} · sorted most-overdue first
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setMode("review")}
+              className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white transition-transform hover:scale-105"
+              style={{ background: "linear-gradient(90deg,#22d3ee,#4f8cff)", boxShadow: "0 6px 20px -6px rgba(34,211,238,0.5)" }}
+            >
+              Start review <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(16,185,129,0.16)" }}>
+              <CheckCircle2 className="w-6 h-6 text-[var(--color-accent-emerald)]" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">Queue clear for today</h2>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                {dueQueue.nextDueAt
+                  ? `Next review due ${format(new Date(dueQueue.nextDueAt), "MMM d")}.`
+                  : "Solve problems to start building your review pipeline."}{" "}
+                Recall keeps the bank solvent — a maintained day.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Retention hero — the honest headline */}
