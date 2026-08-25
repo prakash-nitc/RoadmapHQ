@@ -52,6 +52,7 @@ export function PatternPractice({
   const [step, setStep] = useState<Step>("refresh");
   const [coreMarks, setCoreMarks] = useState<Record<string, boolean>>({});
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+  const [showCoreIdeas, setShowCoreIdeas] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const total = patterns.length;
@@ -61,6 +62,7 @@ export function PatternPractice({
     setStep("refresh");
     setCoreMarks({});
     setRevealed({});
+    setShowCoreIdeas(false);
     setPIndex((i) => i + 1);
   };
 
@@ -152,17 +154,27 @@ export function PatternPractice({
               </p>
             </div>
           </div>
-          {p.core.length > 0 && (
-            <div className="rounded-xl p-3 mb-4" style={{ background: "rgba(79,140,255,0.06)", border: "1px solid rgba(79,140,255,0.15)" }}>
-              <p className="eyebrow mb-2 flex items-center gap-1.5"><Lightbulb className="w-3 h-3" /> The CORE ideas, as a backup</p>
-              <ul className="space-y-1.5">
-                {p.core.filter((c) => c.anchorInsight).slice(0, 5).map((c) => (
-                  <li key={c.id} className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                    <span className="text-[var(--color-text-primary)] font-medium">{c.title}:</span> {c.anchorInsight}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {p.core.some((c) => c.anchorInsight) && (
+            showCoreIdeas ? (
+              <div className="rounded-xl p-3 mb-4" style={{ background: "rgba(79,140,255,0.06)", border: "1px solid rgba(79,140,255,0.15)" }}>
+                <p className="eyebrow mb-2 flex items-center gap-1.5"><Lightbulb className="w-3 h-3" /> The CORE ideas</p>
+                <ul className="space-y-1.5">
+                  {p.core.filter((c) => c.anchorInsight).slice(0, 5).map((c) => (
+                    <li key={c.id} className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                      <span className="text-[var(--color-text-primary)] font-medium">{c.title}:</span> {c.anchorInsight}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowCoreIdeas(true)}
+                className="w-full py-2.5 rounded-xl mb-4 text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] flex items-center justify-center gap-1.5"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+              >
+                <Lightbulb className="w-3.5 h-3.5" /> Stuck? Reveal the core ideas
+              </button>
+            )
           )}
           <button onClick={() => setStep("fresh")} className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2" style={{ background: "linear-gradient(90deg,#a855f7,#7c3aed)" }}>
             Refreshed — next <ArrowRight className="w-4 h-4" />
