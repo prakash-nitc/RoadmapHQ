@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
@@ -11,6 +12,8 @@ import {
   ExternalLink,
   ChevronDown,
   Lightbulb,
+  Zap,
+  NotebookText,
 } from "lucide-react";
 import { PatternPractice } from "./PatternPractice";
 import { savePropeersUrl } from "@/lib/revision-actions";
@@ -47,6 +50,12 @@ interface Data {
   patterns: PPattern[];
 }
 
+interface Recognition {
+  total: number;
+  accuracy: number | null;
+  weak: { name: string; missRate: number }[];
+}
+
 const STATUS_STYLE: Record<PPattern["status"], { label: string; color: string; bg: string }> = {
   due: { label: "Due", color: "#22d3ee", bg: "rgba(34,211,238,0.16)" },
   shaky: { label: "Shaky", color: "#fbbf24", bg: "rgba(245,158,11,0.14)" },
@@ -54,7 +63,7 @@ const STATUS_STYLE: Record<PPattern["status"], { label: string; color: string; b
   unstarted: { label: "Not started", color: "#6b6b7a", bg: "rgba(255,255,255,0.05)" },
 };
 
-export function RevisionCornerClient({ data }: { data: Data }) {
+export function RevisionCornerClient({ data, recognition }: { data: Data; recognition: Recognition }) {
   const router = useRouter();
   const [reviewSet, setReviewSet] = useState<PPattern[] | null>(null);
   const [propeersInput, setPropeersInput] = useState(data.propeersUrl ?? "");
@@ -120,6 +129,69 @@ export function RevisionCornerClient({ data }: { data: Data }) {
               Practice all due <ArrowRight className="w-4 h-4" />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Recognition trainers: drill + mistake log */}
+      <div className="grid sm:grid-cols-2 gap-3">
+        <Link
+          href="/revision/drill"
+          className="group rounded-2xl p-5 transition-transform hover:-translate-y-0.5"
+          style={{ background: "linear-gradient(135deg, rgba(124,92,255,0.16), transparent 65%), rgba(20,20,30,0.5)", border: "1px solid rgba(124,92,255,0.28)" }}
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(124,92,255,0.18)" }}>
+              <Zap className="w-5 h-5 text-[var(--color-accent-purple)]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-[var(--color-text-primary)]">Recognition Drill</p>
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                Read a problem, name the pattern in 60s. The OA skill.
+              </p>
+              {recognition.accuracy !== null ? (
+                <p className="text-[11px] mt-1.5">
+                  <span className="font-mono font-bold text-[var(--color-accent-purple)]">{recognition.accuracy}%</span>
+                  <span className="text-[var(--color-text-muted)]"> recognition · last 30d</span>
+                </p>
+              ) : (
+                <p className="text-[11px] text-[var(--color-accent-purple)] mt-1.5 font-medium">Start your first drill →</p>
+              )}
+            </div>
+          </div>
+        </Link>
+
+        <Link
+          href="/revision/mistakes"
+          className="group rounded-2xl p-5 transition-transform hover:-translate-y-0.5"
+          style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.14), transparent 65%), rgba(20,20,30,0.5)", border: "1px solid rgba(245,158,11,0.26)" }}
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(245,158,11,0.16)" }}>
+              <NotebookText className="w-5 h-5 text-[var(--color-accent-amber)]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-[var(--color-text-primary)]">Mistake Log</p>
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                Capture what you missed, why, and the one-line cue that fixes it.
+              </p>
+              <p className="text-[11px] text-[var(--color-accent-amber)] mt-1.5 font-medium">Open the log →</p>
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {recognition.weak.length > 0 && (
+        <div className="rounded-xl px-4 py-3 glass-row">
+          <p className="text-[11px] text-[var(--color-text-secondary)]">
+            Weakest recognition:{" "}
+            {recognition.weak.map((w, i) => (
+              <span key={w.name}>
+                <span className="font-semibold text-[var(--color-text-primary)]">{w.name}</span>
+                <span className="text-[var(--color-text-muted)]"> ({w.missRate}% miss)</span>
+                {i < recognition.weak.length - 1 ? ", " : ""}
+              </span>
+            ))}
+          </p>
         </div>
       )}
 

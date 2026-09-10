@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { SIGNAL_BANK } from "@/lib/signal-bank";
 
 // ─── The elapsed-interval schedule (Section 6) ─────────────────
 // Absolute plan from Day 0: recall@1, recall@4, cold@10, cold@25, mixed@~monthly.
@@ -641,4 +642,122 @@ export async function reviewProblem(
       nextDueAt: new Date(now.getTime() + 3 * 86400000),
     },
   });
+}
+
+// ─── Identification Drill (spec §7.7) ──────────────────────────
+// Read a stripped problem statement, name the pattern in 60s. Pure
+// recognition training — the OA skill. Reconciled from the spec, but it
+// tests transfer, not title recall, so it fits the pattern-first system.
+
+export interface DrillRep {
+  text: string;
+  difficulty: string;
+  answer: string; // ground-truth pattern name
+  choices: string[]; // 4 shuffled options incl. the answer
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Build a drill: N reps, each a statement + 4 choices (answer + 3 distractors).
+export async function getDrillReps(count: number): Promise<DrillRep[]> {
+  const patternNames = (
+    await prisma.pattern.findMany({ select: { name: true }, orderBy: { order: "asc" } })
+  ).map((p) => p.name);
+
+  const chosen = shuffle(SIGNAL_BANK).slice(0, Math.min(count, SIGNAL_BANK.length));
+
+  return chosen.map((s) => {
+    const distractors = shuffle(patternNames.filter((n) => n !== s.pattern)).slice(0, 3);
+    return {
+      text: s.text,
+      difficulty: s.difficulty,
+      answer: s.pattern,
+      choices: shuffle([s.pattern, ...distractors]),
+    };
+  });
+}
+
+export async function recordDrillResults(
+  reps: { patternName: string; picked: string | null; correct: boolean; durationMs: number }[]
+) {
+  if (reps.length === 0) return;
+  await prisma.revDrillLog.createMany({ data: reps });
+}
+
+// Recognition score over the last 30 days, for the Revision Corner card.
+export async function getRecognitionSummary() {
+  const since = new Date(Date.now() - 30 * 86400000);
+  const logs = await prisma.revDrillLog.findMany({
+    where: { createdAt: { gte: since } },
+    select: { patternName: true, correct: true },
+  });
+
+  const total = logs.length;
+  const correct = logs.filter((l) => l.correct).length;
+  const accuracy = total > 0 ? Math.round((correct / total) * 100) : null;
+
+  // Weakest patterns by miss rate (min 2 attempts).
+  const byPattern = new Map<string, { seen: number; miss: number }>();
+  for (const l of logs) {
+    const e = byPattern.get(l.patternName) ?? { seen: 0, miss: 0 };
+    e.seen++;
+    if (!l.correct) e.miss++;
+    byPattern.set(l.patternName, e);
+  }
+  const weak = [...byPattern.entries()]
+    .filter(([, v]) => v.seen >= 2 && v.miss > 0)
+    .map(([name, v]) => ({ name, missRate: Math.round((v.miss / v.seen) * 100) }))
+    .sort((a, b) => b.missRate - a.missRate)
+    .slice(0, 3);
+
+  return { total, accuracy, weak };
+}
+
+// ─── Mistake Log (spec §7.9) — missed / why / cue ──────────────
+
+export async function addMistake(input: {
+  patternName: string;
+  problemRef?: string;
+  missed: string;
+  why: string;
+  cue: string;
+}) {
+  await prisma.revMistake.create({
+    data: {
+      patternName: input.patternName,
+      problemRef: input.problemRef?.trim() || null,
+      missed: input.missed.trim(),
+      why: input.why.trim(),
+      cue: input.cue.trim(),
+    },
+  });
+}
+
+export async function getMistakes(filter?: { patternName?: string; starredOnly?: boolean }) {
+  return prisma.revMistake.findMany({
+    where: {
+      ...(filter?.patternName ? { patternName: filter.patternName } : {}),
+      ...(filter?.starredOnly ? { starred: true } : {}),
+    },
+    orderBy: [{ starred: "desc" }, { createdAt: "desc" }],
+  });
+}
+
+export async function toggleMistakeStar(id: string, starred: boolean) {
+  await prisma.revMistake.update({ where: { id }, data: { starred } });
+}
+
+export async function toggleMistakeResolved(id: string, resolved: boolean) {
+  await prisma.revMistake.update({ where: { id }, data: { resolved } });
+}
+
+export async function deleteMistake(id: string) {
+  await prisma.revMistake.delete({ where: { id } });
 }

@@ -165,3 +165,37 @@ model UserSettings {
   startDate            DateTime  @default(now())
   propeersUrl          String?   // base link to the Propeers dashboard (fresh problems)
 }
+
+// ─── Revision extras (reconciled from REVISION_APP_SPEC) ─────
+// Additive, Rev-prefixed per the spec's SQLite path. Single-user app, so no
+// userId column. These train/record pattern RECOGNITION, complementing the
+// pattern-first practice (they never touch tracker tables).
+
+// One row per identification-drill rep: read a statement, name the pattern.
+model RevDrillLog {
+  id          String   @id @default(cuid())
+  patternName String   // the ground-truth pattern for the shown statement
+  picked      String?  // what the user chose (null = timed out)
+  correct     Boolean
+  durationMs  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([patternName])
+}
+
+// Mistake log — the narrow missed / why / cue triad (spec §7.9).
+model RevMistake {
+  id          String   @id @default(cuid())
+  patternName String
+  problemRef  String?  // optional free-text problem title/link
+  missed      String   // what went wrong
+  why         String   // the faulty assumption behind it
+  cue         String   // the one-line reminder that prevents it next time
+  starred     Boolean  @default(false)
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([patternName])
+}
