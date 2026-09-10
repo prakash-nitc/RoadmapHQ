@@ -14,6 +14,8 @@ import {
   Lightbulb,
   Zap,
   NotebookText,
+  Shuffle,
+  Activity,
 } from "lucide-react";
 import { PatternPractice } from "./PatternPractice";
 import { savePropeersUrl } from "@/lib/revision-actions";
@@ -63,8 +65,17 @@ const STATUS_STYLE: Record<PPattern["status"], { label: string; color: string; b
   unstarted: { label: "Not started", color: "#6b6b7a", bg: "rgba(255,255,255,0.05)" },
 };
 
-export function RevisionCornerClient({ data, recognition }: { data: Data; recognition: Recognition }) {
+export function RevisionCornerClient({
+  data,
+  recognition,
+  lastTestAt,
+}: {
+  data: Data;
+  recognition: Recognition;
+  lastTestAt: string | null;
+}) {
   const router = useRouter();
+  const testDue = !lastTestAt || Date.now() - new Date(lastTestAt).getTime() > 7 * 86400000;
   const [reviewSet, setReviewSet] = useState<PPattern[] | null>(null);
   const [propeersInput, setPropeersInput] = useState(data.propeersUrl ?? "");
   const [savingUrl, startSaveUrl] = useTransition();
@@ -161,6 +172,34 @@ export function RevisionCornerClient({ data, recognition }: { data: Data; recogn
         </Link>
 
         <Link
+          href="/revision/test"
+          className="group rounded-2xl p-5 transition-transform hover:-translate-y-0.5"
+          style={{ background: "linear-gradient(135deg, rgba(56,189,248,0.15), transparent 65%), rgba(20,20,30,0.5)", border: "1px solid rgba(56,189,248,0.28)" }}
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(56,189,248,0.16)" }}>
+              <Shuffle className="w-5 h-5 text-[#38bdf8]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold text-[var(--color-text-primary)]">Interleaved Test</p>
+                {testDue && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ color: "#38bdf8", background: "rgba(56,189,248,0.18)" }}>
+                    DUE
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                10 problems, 8+ patterns, shuffled. The weekly reality check.
+              </p>
+              <p className="text-[11px] text-[#38bdf8] mt-1.5 font-medium">
+                {lastTestAt ? `Last taken ${format(new Date(lastTestAt), "MMM d")} →` : "Take your first test →"}
+              </p>
+            </div>
+          </div>
+        </Link>
+
+        <Link
           href="/revision/mistakes"
           className="group rounded-2xl p-5 transition-transform hover:-translate-y-0.5"
           style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.14), transparent 65%), rgba(20,20,30,0.5)", border: "1px solid rgba(245,158,11,0.26)" }}
@@ -175,6 +214,25 @@ export function RevisionCornerClient({ data, recognition }: { data: Data; recogn
                 Capture what you missed, why, and the one-line cue that fixes it.
               </p>
               <p className="text-[11px] text-[var(--color-accent-amber)] mt-1.5 font-medium">Open the log →</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link
+          href="/revision/stats"
+          className="group rounded-2xl p-5 transition-transform hover:-translate-y-0.5"
+          style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.14), transparent 65%), rgba(20,20,30,0.5)", border: "1px solid rgba(16,185,129,0.26)" }}
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(16,185,129,0.16)" }}>
+              <Activity className="w-5 h-5 text-[var(--color-accent-emerald)]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-[var(--color-text-primary)]">Pattern Health</p>
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                What would survive a cold test today — every pattern, weakest first.
+              </p>
+              <p className="text-[11px] text-[var(--color-accent-emerald)] mt-1.5 font-medium">See diagnostics →</p>
             </div>
           </div>
         </Link>

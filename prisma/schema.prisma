@@ -178,6 +178,7 @@ model RevDrillLog {
   picked      String?  // what the user chose (null = timed out)
   correct     Boolean
   durationMs  Int      @default(0)
+  source      String   @default("DRILL") // DRILL | TEST (interleaved weekly test)
   createdAt   DateTime @default(now())
 
   @@index([createdAt])

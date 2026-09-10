@@ -685,10 +685,194 @@ export async function getDrillReps(count: number): Promise<DrillRep[]> {
 }
 
 export async function recordDrillResults(
-  reps: { patternName: string; picked: string | null; correct: boolean; durationMs: number }[]
+  reps: { patternName: string; picked: string | null; correct: boolean; durationMs: number }[],
+  source: "DRILL" | "TEST" = "DRILL"
 ) {
   if (reps.length === 0) return;
-  await prisma.revDrillLog.createMany({ data: reps });
+  await prisma.revDrillLog.createMany({ data: reps.map((r) => ({ ...r, source })) });
+}
+
+// ─── Interleaved Test (spec §7.8) ──────────────────────────────
+// The weekly mixed exam. Deliberately spans >=8 distinct patterns so you
+// can't coast on "this section is all sliding window" — interleaving is what
+// breaks the block-practice illusion. Correctness is hidden until the end.
+
+const TEST_SIZE = 10;
+const MIN_DISTINCT_PATTERNS = 8;
+
+export async function getInterleavedReps(): Promise<DrillRep[]> {
+  const patternNames = (
+    await prisma.pattern.findMany({ select: { name: true }, orderBy: { order: "asc" } })
+  ).map((p) => p.name);
+
+  // Bucket the bank by pattern, then take one from each of N distinct
+  // patterns before allowing any repeats.
+  const byPattern = new Map<string, typeof SIGNAL_BANK>();
+  for (const s of SIGNAL_BANK) {
+    const list = byPattern.get(s.pattern) ?? [];
+    list.push(s);
+    byPattern.set(s.pattern, list);
+  }
+
+  const distinct = shuffle([...byPattern.keys()]);
+  const targetDistinct = Math.min(Math.max(MIN_DISTINCT_PATTERNS, 0), distinct.length);
+  const chosen: typeof SIGNAL_BANK = [];
+
+  // One per distinct pattern first (guarantees the spread).
+  for (const p of distinct.slice(0, Math.min(TEST_SIZE, targetDistinct))) {
+    const pool = byPattern.get(p)!;
+    chosen.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  // Fill the remainder from patterns not yet used, then anywhere.
+  const remainingPools = shuffle(distinct.slice(chosen.length));
+  for (const p of remainingPools) {
+    if (chosen.length >= TEST_SIZE) break;
+    const pool = byPattern.get(p)!;
+    chosen.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  while (chosen.length < TEST_SIZE) {
+    const pick = SIGNAL_BANK[Math.floor(Math.random() * SIGNAL_BANK.length)];
+    if (!chosen.includes(pick)) chosen.push(pick);
+  }
+
+  return shuffle(chosen).map((s) => {
+    const distractors = shuffle(patternNames.filter((n) => n !== s.pattern)).slice(0, 3);
+    return {
+      text: s.text,
+      difficulty: s.difficulty,
+      answer: s.pattern,
+      choices: shuffle([s.pattern, ...distractors]),
+    };
+  });
+}
+
+export async function getLastTestAt(): Promise<Date | null> {
+  const last = await prisma.revDrillLog.findFirst({
+    where: { source: "TEST" },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+  return last?.createdAt ?? null;
+}
+
+// ─── Pattern Health (spec §6.4, adapted) ───────────────────────
+// Health blends three honest signals we actually have:
+//   • mastery   — mean masteryScore across the pattern's problems (the
+//                 ladder already encodes retention AND coverage, since
+//                 unsolved problems sit at 0)
+//   • recency   — decay since the pattern was last practiced
+//   • recognition — drill/test accuracy for that pattern
+// Shaky patterns (recent "shaky" verdicts) are penalised.
+
+export interface PatternHealthRow {
+  id: string;
+  name: string;
+  order: number;
+  health: number;
+  mastery: number;
+  recognition: number | null;
+  recognitionAttempts: number;
+  daysSincePractice: number | null;
+  revFailCount: number;
+  problemCount: number;
+  solvedCount: number;
+}
+
+export async function getPatternHealth(): Promise<PatternHealthRow[]> {
+  const since = new Date(Date.now() - 45 * 86400000);
+  const [patterns, logs] = await Promise.all([
+    prisma.pattern.findMany({
+      include: {
+        problems: { select: { masteryScore: true, status: true } },
+      },
+      orderBy: { order: "asc" },
+    }),
+    prisma.revDrillLog.findMany({
+      where: { createdAt: { gte: since } },
+      select: { patternName: true, correct: true },
+    }),
+  ]);
+
+  const recog = new Map<string, { seen: number; hit: number }>();
+  for (const l of logs) {
+    const e = recog.get(l.patternName) ?? { seen: 0, hit: 0 };
+    e.seen++;
+    if (l.correct) e.hit++;
+    recog.set(l.patternName, e);
+  }
+
+  const now = Date.now();
+  const rows = patterns.map((p) => {
+    const problemCount = p.problems.length;
+    const solvedCount = p.problems.filter((pr) =>
+      ["SOLVED", "REVISED", "MASTERED"].includes(pr.status)
+    ).length;
+    const mastery =
+      problemCount > 0
+        ? Math.round(p.problems.reduce((s, pr) => s + pr.masteryScore, 0) / problemCount)
+        : 0;
+
+    const daysSincePractice = p.revLastDoneAt
+      ? Math.floor((now - p.revLastDoneAt.getTime()) / 86400000)
+      : null;
+
+    // Recency decay: never below 0.55 so an old-but-mastered pattern doesn't
+    // read as worthless. Never practiced but has solves → mild 0.85.
+    const recencyMult =
+      daysSincePractice !== null
+        ? Math.max(0.55, 1 - daysSincePractice / 60)
+        : solvedCount > 0
+        ? 0.85
+        : 1;
+
+    const r = recog.get(p.name);
+    const recognition = r && r.seen >= 2 ? Math.round((r.hit / r.seen) * 100) : null;
+
+    const base = mastery * recencyMult;
+    let health = recognition !== null ? 0.65 * base + 0.35 * recognition : base;
+    health -= Math.min(15, p.revFailCount * 5); // shaky drags it down
+    health = Math.max(0, Math.min(100, Math.round(health)));
+
+    return {
+      id: p.id,
+      name: p.name,
+      order: p.order,
+      health,
+      mastery,
+      recognition,
+      recognitionAttempts: r?.seen ?? 0,
+      daysSincePractice,
+      revFailCount: p.revFailCount,
+      problemCount,
+      solvedCount,
+    };
+  });
+
+  // Weakest first — the panel exists to surface decay, not to congratulate.
+  return rows.sort((a, b) => a.health - b.health);
+}
+
+export async function getStatsData() {
+  const [health, recognition, lastTestAt] = await Promise.all([
+    getPatternHealth(),
+    getRecognitionSummary(),
+    getLastTestAt(),
+  ]);
+
+  const since = new Date(Date.now() - 30 * 86400000);
+  const testLogs = await prisma.revDrillLog.findMany({
+    where: { source: "TEST", createdAt: { gte: since } },
+    select: { correct: true },
+  });
+  const testAccuracy =
+    testLogs.length > 0
+      ? Math.round((testLogs.filter((l) => l.correct).length / testLogs.length) * 100)
+      : null;
+
+  const avgHealth =
+    health.length > 0 ? Math.round(health.reduce((s, h) => s + h.health, 0) / health.length) : 0;
+
+  return { health, recognition, lastTestAt, testAccuracy, avgHealth };
 }
 
 // Recognition score over the last 30 days, for the Revision Corner card.
