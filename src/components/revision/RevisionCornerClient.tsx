@@ -16,6 +16,7 @@ import {
   NotebookText,
   Shuffle,
   Activity,
+  BookOpen,
 } from "lucide-react";
 import { PatternPractice } from "./PatternPractice";
 import { savePropeersUrl } from "@/lib/revision-actions";
@@ -237,6 +238,24 @@ export function RevisionCornerClient({
           </div>
         </Link>
       </div>
+
+      {/* Playbook — the protocol, so the doc never has to be reopened */}
+      <Link
+        href="/revision/playbook"
+        className="flex items-center gap-3 px-4 py-3.5 rounded-xl transition-transform hover:-translate-y-0.5"
+        style={{ background: "linear-gradient(90deg, rgba(124,92,255,0.14), rgba(79,140,255,0.05))", border: "1px solid rgba(124,92,255,0.26)" }}
+      >
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(124,92,255,0.18)" }}>
+          <BookOpen className="w-4.5 h-4.5 text-[var(--color-accent-purple)]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-[var(--color-text-primary)]">Revision Playbook</p>
+          <p className="text-[11px] text-[var(--color-text-muted)]">
+            Pattern triggers · the 3 modes · repair rules · interleaving · habits — from your strategy doc
+          </p>
+        </div>
+        <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+      </Link>
 
       {recognition.weak.length > 0 && (
         <div className="rounded-xl px-4 py-3 glass-row">
