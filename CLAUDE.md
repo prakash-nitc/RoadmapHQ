@@ -17,12 +17,19 @@ node serve.mjs                      # terminal 1: dev server on prisma/test.db
 SHOTS=./shots node problems.mjs     # terminal 2: one suite per feature area
 SHOTS=./shots node analytics.mjs
 SHOTS=./shots node revision.mjs
+SHOTS=./shots node dashboard.mjs
+SHOTS=./shots node journal.mjs
+SHOTS=./shots node goals.mjs
 SHOTS=./shots node tour.mjs         # every route: heading, no NaN, no page errors
 ```
 
+Every suite reseeds `prisma/test.db`, so run them one at a time — never in parallel.
+
 Setup and details: `drive/README.md`. Suites honour `URL` (default
 `http://localhost:3000/`) and `SHOTS` (screenshot folder, off when unset). On 2026-09-11
-all four passed against the unmodified app (18 / 31 / 25 / 33 checks).
+all four original suites passed against the unmodified app (18 / 31 / 25 / 33 checks).
+After that day's fixes, all seven passed in one run: problems 23, analytics 36,
+revision 39, dashboard 34, journal 10, goals 11, tour 33.
 
 **Playwright stays out of the root `package.json`.** It lives only in
 `drive/package.json`, pinned by `drive/package-lock.json` to 1.62.1 (1.63.0's Chromium
@@ -65,9 +72,13 @@ at the root. Never commit `drive/shots/`.
   no dates. It does **not** include the revision data applied to production by one-off
   scripts (CORE anchors, anchor insights, Propeers mapping), so the Revision Corner shows
   its "not tagged yet" states locally.
-- Baseline when the harness was added: `npm run build` passes; `npm run lint` fails with
+- Baseline when the harness was added: `npm run build` passed; `npm run lint` failed with
   17 errors, all pre-existing in app code (react-hooks purity, set-state-in-effect and
-  immutability rules, plus one prefer-const in `scripts/`).
+  immutability rules, plus one prefer-const in `scripts/`). They were fixed the same day
+  and `npm run lint` reports 0 problems — keep it at zero. Accepted patterns: read
+  localStorage and clocks through `useSyncExternalStore` (`src/lib/use-local-storage.ts`),
+  load data inside the effect with a cancel flag, and decide time-based flags on the
+  server (e.g. `getTestStatus` in `src/lib/revision-actions.ts`).
 
 ## Rules for writing assertions
 
@@ -114,6 +125,15 @@ App-specific traps:
   `@layer base`. Tailwind v4 emits utilities in `@layer utilities`, and an unlayered rule
   beats every layered one — an unlayered `* { margin: 0; padding: 0 }` once silently
   disabled every `p-*`, `m-*` and `space-y-*` class in the app (removed 2026-09-11).
+- A click that times out with "`<nextjs-portal>` … intercepts pointer events" is the
+  dev-only Next badge sitting on the target. `next.config.ts` puts it bottom-right; at
+  the default bottom-left it covered the collapsed sidebar's Expand button.
+- A check that something is *absent* passes vacuously if it reads before hydration:
+  client-only UI (the streak warning, Sunday banner, celebration) renders after it.
+  Wait for a post-hydration signal first — `dashboard.mjs` waits for the sidebar streak
+  chip, which fetches its own data once hydrated.
+- `innerText` may put no break between flex siblings: the sidebar chip's number and
+  "DAY" failed to match `\d+\s+day` and matched `\d+\s*day`.
 
 ## The server-clock caveat
 
@@ -123,3 +143,13 @@ and `src/lib/revision-actions.ts` use real server time — so a fake browser clo
 silent mismatches. Seed relative to the real today and assert relative facts ("a
 problem solved now counts in this week"). Don't run date-sensitive suites across
 midnight.
+
+Client components that read only the **browser** clock — the streak warning, the Sunday
+review banner, the celebration's day key — can be driven with
+`page.clock.setFixedTime`; `dashboard.mjs` does it in a second browser. A page that loads
+or reloads while pinned to a different day than the server's today fails hydration (the
+server-rendered calendar disagrees) and throws a page error, so load pages pinned to the
+server's today and change the pinned day only between client-side navigations. What the
+server computes — streaks, "due", mission completion — can't be moved this way, which is
+why the streak warning's positive path (a streak built through yesterday, nothing yet
+today) has no suite.

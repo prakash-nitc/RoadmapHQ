@@ -13,9 +13,12 @@ Playwright lives only in this folder (its own `package.json`, pinned by
 | `lib.mjs` | `open()` a 1440×900 page that collects page errors; `checker()` for PASS/FAIL lines |
 | `support.mjs` | test-database seeding, `URL`/`SHOTS` env, waits, screenshots, the wrong-database tripwire |
 | `serve.mjs` | starts `next dev` against the test database |
-| `problems.mjs` | list renders, filters work, marking a problem solved persists |
+| `problems.mjs` | list renders, filters narrow the rows without changing overall progress, marking a problem solved persists |
 | `analytics.mjs` | every stat and chart renders — empty and with activity — with no NaN |
-| `revision.mjs` | the recognition drill advances and records; a practiced pattern stays moved |
+| `revision.mjs` | the drill clock runs and resets, the drill advances and records; a practiced pattern stays moved; the weekly test is DUE until taken |
+| `dashboard.mjs` | sidebar collapse sticks; the late-evening streak warning, Sunday banner and mission-complete celebration show when they should and stay dismissed |
+| `journal.mjs` | an entry saves and survives a reload; each day keeps its own entry |
+| `goals.mjs` | a saved placement date persists and drives the verdict's day count and pace |
 | `tour.mjs` | all 16 routes render their heading with no NaN or page errors; screenshots each |
 
 ## Which database?
@@ -52,8 +55,13 @@ node serve.mjs                       # terminal 1 — leave it running
 SHOTS=./shots node problems.mjs      # terminal 2
 SHOTS=./shots node analytics.mjs
 SHOTS=./shots node revision.mjs
+SHOTS=./shots node dashboard.mjs
+SHOTS=./shots node journal.mjs
+SHOTS=./shots node goals.mjs
 SHOTS=./shots node tour.mjs
 ```
+
+Each suite reseeds `test.db`, so run them one at a time, never in parallel.
 
 PowerShell: `$env:SHOTS = './shots'; node tour.mjs`
 
