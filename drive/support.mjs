@@ -103,12 +103,33 @@ export async function settleVisuals(page) {
   }
 }
 
+// Playwright's fullPage capture paints beyond the viewport, and Chromium mis-draws
+// tall frosted-glass (backdrop-filter) cards that way: the Problems table came out
+// shifted under the sidebar and faded while the live page was fine. Instead, stretch
+// the viewport to the page height so the browser lays out and paints the whole page
+// for real, capture, then put the 1440x900 viewport back for the assertions.
+const MAX_CAPTURE_HEIGHT = 16_000;
+
 export async function shoot(page, name) {
   if (!SHOTS) return;
   await settleVisuals(page);
   mkdirSync(SHOTS, { recursive: true });
   const path = join(SHOTS, `${name}.png`);
-  await page.screenshot({ path, fullPage: true });
+  const viewport = page.viewportSize();
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  if (height > MAX_CAPTURE_HEIGHT) {
+    await page.screenshot({ path, fullPage: true });
+  } else {
+    try {
+      if (height > viewport.height) {
+        await page.setViewportSize({ width: viewport.width, height });
+        await settleVisuals(page); // a resize re-renders responsive charts
+      }
+      await page.screenshot({ path });
+    } finally {
+      await page.setViewportSize(viewport);
+    }
+  }
   console.log(`    shot  ${path}`);
 }
 

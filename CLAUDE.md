@@ -101,8 +101,12 @@ App-specific traps:
 - Charts animate in: the Analytics donut is still empty at network idle and fully
   drawn about a second later. `shoot()` waits for finite CSS animations and for chart
   SVG to stop changing, so a blank chart in a screenshot is a real finding.
-- Full-page screenshots draw `position: fixed` elements (sidebar, aurora background)
-  only within the first 900px — a sidebar that stops partway down a shot is not a bug.
+- Don't use Playwright's `fullPage` capture here. It paints beyond the viewport, and
+  Chromium mis-draws tall frosted-glass (`backdrop-filter`) cards that way: the Problems
+  table came out shifted under the sidebar and faded while the live page measured fine.
+  `shoot()` stretches the viewport to the page height, captures, and restores 1440×900
+  (assertions stay at the fixed size). If a screenshot looks broken, measure the live
+  layout before believing it.
 - Once, every nested route (`/revision/*`, `/patterns/<id>`, `/api/*`) returned 404 on a
   long-running dev server while single-segment routes worked. It didn't reproduce on a
   fresh server; if it happens, restart `node serve.mjs`.

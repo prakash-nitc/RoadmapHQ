@@ -90,6 +90,8 @@ The assertion rules live in the root `CLAUDE.md`. Traps specific to this app:
 - Charts animate in — the Analytics donut starts ~400 ms late and is still empty at
   network-idle. `shoot()` waits for finite CSS animations to end and for chart SVG to stop
   changing before it captures, so a blank chart in a shot is worth investigating.
-- Full-page screenshots draw `position: fixed` elements (the sidebar, the aurora
-  background) only within the first 900 px. A sidebar that "ends" partway down a shot is
-  not a layout bug.
+- `shoot()` does not use Playwright's `fullPage` capture. That paints beyond the
+  viewport, and Chromium mis-draws tall frosted-glass cards that way — the Problems table
+  came out shifted under the sidebar and faded while the live page was fine. Instead it
+  stretches the viewport to the page height, captures, and restores 1440×900, so
+  assertions still run at the fixed size.
