@@ -133,6 +133,16 @@ export async function shoot(page, name) {
   console.log(`    shot  ${path}`);
 }
 
+// For UI that goes away on its own (the celebration toast dismisses itself after
+// 8s, sooner than shoot() finishes settling): capture the viewport as it is now.
+export async function shootNow(page, name) {
+  if (!SHOTS) return;
+  mkdirSync(SHOTS, { recursive: true });
+  const path = join(SHOTS, `${name}.png`);
+  await page.screenshot({ path });
+  console.log(`    shot  ${path}`);
+}
+
 // `npm run db:reset` output ends with the seed's own row counts.
 export function seededProblemCount(resetOutput) {
   const m = String(resetOutput).match(/Problems:\s+(\d+)/);
