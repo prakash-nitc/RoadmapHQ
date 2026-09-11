@@ -3,7 +3,7 @@
 
 import { open, checker } from './lib.mjs';
 import {
-  url, mainText, waitForMain, shoot, BROKEN_VALUE, escapeRe, matchCheck, sameText,
+  url, mainText, waitForMain, settle, shoot, BROKEN_VALUE, escapeRe, matchCheck, sameText,
   seedTestDb, assertSeededLocalDb,
 } from './support.mjs';
 
@@ -13,6 +13,8 @@ const SOLVES = [
   { title: 'Start of LinkedList Cycle', pattern: 'Fast & Slow Pointers' },
   { title: 'No-repeat Substring', pattern: 'Sliding Window' },
 ];
+// Added through Admin with no difficulty, so the donut has to label it.
+const UNRATED = 'Harness Unrated Problem';
 
 // Dates as the app formats them (date-fns, en-US), relative to the REAL today:
 // these are computed on the server, so they follow the machine clock, and the
@@ -52,7 +54,9 @@ function readAnalytics(text) {
     dailyAverage: text.match(/Last 30 days · ([^\n]+)/)?.[1].trim(),
     perDayEmpty: text.includes('Solve a problem to start the chart.'),
     mixEmpty: text.includes('Solve some problems to see your difficulty split.'),
-    mix: text.match(/(\d+)\s+easy\s+(\d+)\s+medium\s+(\d+)\s+hard/i)?.slice(1) ?? null,
+    // The donut's legend: every "<count>\n<LABEL>" pair, in on-screen order.
+    mix: Object.fromEntries([...text.matchAll(/(\d+)\s*\n\s*(easy|medium|hard|other)\s*(?=\n|$)/gi)]
+      .map((m) => [m[2].toLowerCase(), m[1]])),
     strongest: board.split(/\n\s*needs work\s*\n/i)[0],
   };
 }
@@ -70,14 +74,16 @@ try {
   check('best day ever / date', a.bestDay, ['0', '—']);
   check('current streak', a.currentStreak, '0d');
   check('longest streak', a.longestStreak, '0d');
-  check('momentum headline', a.headline, 'Holding steady — consistency compounds');
+  check('momentum headline speaks to eight empty weeks', a.headline, 'No solves in the last 8 weeks — one problem today restarts your momentum');
   check('best week / momentum delta', a.bestWeekAndDelta, ['0 · —', '0']);
   check('8-week axis: 7 dated weeks + "This wk"', a.weekAxis, Array(8).fill(true));
   check('this-week bar count', a.thisWeekBar, '0');
   check('daily average line', a.dailyAverage, '0/day average over 0 active days');
   check('per-day chart shows its empty state', a.perDayEmpty, true);
   check('difficulty mix shows its empty state', a.mixEmpty, true);
+  check('difficulty legend is empty', a.mix, {});
   matchCheck(check, 'pattern leaderboard renders both columns', text, /Pattern leaderboard[\s\S]*strongest[\s\S]*needs work/i);
+  matchCheck(check, 'strongest column waits for real progress instead of listing 0% patterns', a.strongest, /Build mastery to climb the board\./);
   check('no NaN / undefined / Invalid Date', BROKEN_VALUE.test(text), false);
   await shoot(page, 'analytics-1-fresh');
 
@@ -103,13 +109,43 @@ try {
   check('best week / momentum delta', a.bestWeekAndDelta, [`3 · ${MMMd(thisWeekStart)}`, '+3']);
   check('8-week axis: 7 dated weeks + "This wk"', a.weekAxis, Array(8).fill(true));
   check('this-week bar count', a.thisWeekBar, '3');
-  check('daily average line', a.dailyAverage, '3/day average over 1 active days');
+  check('daily average line (singular "day")', a.dailyAverage, '3/day average over 1 active day');
   check('per-day chart replaces its empty state', a.perDayEmpty, false);
   check('difficulty mix replaces its empty state', a.mixEmpty, false);
-  check('difficulty mix: easy / medium / hard', a.mix, ['1', '1', '1']);
+  check('difficulty legend: easy / medium / hard', a.mix, { easy: '1', medium: '1', hard: '1' });
   check('strongest patterns are the three just worked on', SOLVES.map((s) => a.strongest.includes(s.pattern)), [true, true, true]);
   check('no NaN / undefined / Invalid Date', BROKEN_VALUE.test(text), false);
   await shoot(page, 'analytics-2-with-activity');
+
+  console.log('  -- a solved problem with no difficulty gets its own labelled slice');
+  await page.goto(url('admin'));
+  await waitForMain(page, /Add new patterns, videos, and problems/);
+  await settle(page);
+  // Only the tab is named "Add Problem" until the problem form opens.
+  await page.locator('main').getByRole('button', { name: 'Add Problem', exact: true }).click();
+  await waitForMain(page, /new problem/i);
+  const form = page.locator('[data-panel="admin-form"]');
+  await form.getByPlaceholder('Problem title').fill(UNRATED);
+  await form.getByPlaceholder('Problem URL (LeetCode/GFG link)').fill('https://example.com/harness-unrated-problem');
+  await form.locator('select').filter({ hasText: 'Two Pointers' }).selectOption({ label: 'Two Pointers' });
+  await form.getByRole('button', { name: 'Add Problem', exact: true }).click();
+  await waitForMain(page, /Problem added!/);
+
+  await page.goto(url('problems'));
+  await waitForMain(page, /across\s+[1-9]\d*\s+problems/i);
+  await page.getByPlaceholder('Search problems...').fill(UNRATED);
+  await page.getByRole('row', { name: new RegExp(escapeRe(UNRATED)) }).getByRole('combobox').selectOption({ label: 'Solved' });
+  await waitForMain(page, /solved\s+4\s+remaining/i);
+
+  await page.goto(url('analytics'));
+  await waitForMain(page, /Weekly momentum/);
+  await page.waitForLoadState('networkidle');
+  text = await mainText(page);
+  a = readAnalytics(text);
+  check('this week counts the unrated solve', a.thisWeek, ['4', '+4']);
+  check('difficulty legend labels it Other', a.mix, { easy: '1', medium: '1', hard: '1', other: '1' });
+  check('no NaN / undefined / Invalid Date', BROKEN_VALUE.test(text), false);
+  await shoot(page, 'analytics-3-with-unrated');
 
   console.log('  -- reload');
   await page.reload();

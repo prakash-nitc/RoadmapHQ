@@ -76,7 +76,7 @@ at the root. Never commit `drive/shots/`.
 2. For structural things text can't identify, add a stable `data-*` hook to the
    component (e.g. `data-panel="queue"`). That is the only app-code change a
    verification task permits; keep it minimal. Existing: `data-pattern-row="<name>"`
-   on the Revision Corner pattern rows.
+   on the Revision Corner pattern rows, `data-panel="admin-form"` on the Admin form card.
 3. **Always assert the change survives a reload.** Capture the text, `page.reload()`,
    compare.
 4. Assert `/NaN|undefined|Invalid Date/` does NOT appear.

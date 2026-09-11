@@ -144,7 +144,7 @@ export default function AdminPage() {
       )}
 
       {/* Forms */}
-      <div className="section-card p-7 space-y-4">
+      <div className="section-card p-7 space-y-4" data-panel="admin-form">
         {activeForm === "pattern" && (
           <>
             <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">New Pattern</h2>

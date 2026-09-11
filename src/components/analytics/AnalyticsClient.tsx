@@ -64,6 +64,8 @@ export function AnalyticsClient({ data }: { data: AnalyticsData }) {
     data.difficultyCounts.HARD +
     data.difficultyCounts.UNKNOWN;
 
+  // Problems solved without a difficulty get their own slice — and their own
+  // legend entry, so the donut never shows a colour nobody can read.
   const difficultyPie = [
     { name: "Easy", value: data.difficultyCounts.EASY, color: DIFFICULTY_COLORS.EASY },
     { name: "Medium", value: data.difficultyCounts.MEDIUM, color: DIFFICULTY_COLORS.MEDIUM },
@@ -72,6 +74,9 @@ export function AnalyticsClient({ data }: { data: AnalyticsData }) {
       ? [{ name: "Other", value: data.difficultyCounts.UNKNOWN, color: DIFFICULTY_COLORS.UNKNOWN }]
       : []),
   ];
+
+  // "Strongest" means real progress; a 0% pattern isn't strong, it's untouched.
+  const strongest = data.strongest.filter((p) => p.mastery > 0);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -144,7 +149,8 @@ export function AnalyticsClient({ data }: { data: AnalyticsData }) {
                 Problems solved per day
               </h2>
               <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                Last 30 days · {data.dailyAverage}/day average over {data.daysActive} active days
+                Last 30 days · {data.dailyAverage}/day average over {data.daysActive} active{" "}
+                {data.daysActive === 1 ? "day" : "days"}
               </p>
             </div>
           </div>
@@ -228,23 +234,23 @@ export function AnalyticsClient({ data }: { data: AnalyticsData }) {
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="w-full grid grid-cols-3 gap-2 mt-3">
-                {difficultyPie
-                  .filter((d) => d.value > 0 || ["Easy", "Medium", "Hard"].includes(d.name))
-                  .slice(0, 3)
-                  .map((d) => (
-                    <div key={d.name} className="text-center">
-                      <div
-                        className="text-base font-bold font-mono"
-                        style={{ color: d.color }}
-                      >
-                        {d.value}
-                      </div>
-                      <div className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-semibold">
-                        {d.name}
-                      </div>
+              <div
+                className="w-full grid gap-2 mt-3"
+                style={{ gridTemplateColumns: `repeat(${difficultyPie.length}, minmax(0, 1fr))` }}
+              >
+                {difficultyPie.map((d) => (
+                  <div key={d.name} className="text-center">
+                    <div
+                      className="text-base font-bold font-mono"
+                      style={{ color: d.color }}
+                    >
+                      {d.value}
                     </div>
-                  ))}
+                    <div className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-semibold">
+                      {d.name}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ) : (
@@ -273,7 +279,7 @@ export function AnalyticsClient({ data }: { data: AnalyticsData }) {
             title="Strongest"
             icon={Trophy}
             color="var(--color-accent-emerald)"
-            patterns={data.strongest}
+            patterns={strongest}
             emptyHint="Build mastery to climb the board."
           />
           <LeaderboardColumn
@@ -305,9 +311,15 @@ function WeeklyMomentum({
   const max = Math.max(...weeklyTrend.map((w) => w.count), 1);
   const rising = momentumDelta > 0;
   const flat = momentumDelta === 0;
+  const anyRecentSolves = weeklyTrend.some((w) => w.count > 0);
 
-  // Encouraging headline that reads the shape of the recent trend.
+  // Encouraging headline that reads the shape of the recent trend — without
+  // calling eight empty weeks "holding steady".
   const headline = (() => {
+    if (!anyRecentSolves)
+      return "No solves in the last 8 weeks — one problem today restarts your momentum";
+    if (problemsThisWeek === 0)
+      return "Quiet week so far — one solve gets the trend moving again";
     if (problemsThisWeek > problemsLastWeek && problemsLastWeek === 0)
       return "Back in the game — great comeback week 💪";
     if (rising) return "You're accelerating — momentum is on your side";
@@ -460,7 +472,8 @@ function StatCard({
         >
           <Icon className="w-3.5 h-3.5" style={{ color }} />
         </div>
-        <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-[0.18em] font-semibold truncate">
+        {/* Wraps to two lines at narrow widths instead of cutting the label off */}
+        <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-[0.14em] font-semibold leading-snug">
           {label}
         </span>
       </div>
