@@ -50,7 +50,7 @@ export function PatternReadiness({ patterns }: { patterns: PatternReadinessItem[
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3">
         {patterns.map((p) => {
           const barColor = getBarColor(p.completion);
 
@@ -63,13 +63,18 @@ export function PatternReadiness({ patterns }: { patterns: PatternReadinessItem[
               {/* Status dot */}
               <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${getStatusDot(p.status)}`} />
 
-              {/* Name */}
-              <span className="text-sm font-medium text-[var(--color-text-primary)] flex-1 truncate group-hover:text-[var(--color-accent-blue)] transition-colors">
-                {p.name}
-              </span>
+              {/* Name, with the counts underneath so long pattern names fit */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[var(--color-text-primary)] truncate group-hover:text-[var(--color-accent-blue)] transition-colors">
+                  {p.name}
+                </p>
+                <p className="text-[10px] font-mono text-[var(--color-text-muted)] mt-0.5">
+                  {p.watchedVideos}/{p.totalVideos} videos · {p.solvedProblems}/{p.totalProblems} problems
+                </p>
+              </div>
 
               {/* Progress bar */}
-              <div className="hidden sm:block w-24 h-1.5 rounded-full bg-[var(--color-bg-primary)] overflow-hidden">
+              <div className="hidden sm:block w-24 h-1.5 rounded-full bg-[var(--color-bg-primary)] overflow-hidden shrink-0">
                 <div
                   className="h-full rounded-full progress-bar-fill"
                   style={{
@@ -79,14 +84,6 @@ export function PatternReadiness({ patterns }: { patterns: PatternReadinessItem[
                   }}
                 />
               </div>
-
-              {/* Counts */}
-              <span className="text-[10px] font-mono text-[var(--color-text-muted)] shrink-0 w-16 text-right">
-                {p.watchedVideos}/{p.totalVideos} vid
-              </span>
-              <span className="text-[10px] font-mono text-[var(--color-text-muted)] shrink-0 w-16 text-right">
-                {p.solvedProblems}/{p.totalProblems} prob
-              </span>
 
               {/* Percentage */}
               <span
