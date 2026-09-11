@@ -24,10 +24,16 @@ interface Recognition {
   weak: { name: string; missRate: number }[];
 }
 
-function band(h: number): { color: string; bg: string; label: string } {
-  if (h >= 80) return { color: "#34d399", bg: "rgba(16,185,129,0.16)", label: "Healthy" };
-  if (h >= 60) return { color: "#fbbf24", bg: "rgba(245,158,11,0.16)", label: "Watch" };
-  if (h >= 40) return { color: "#fb923c", bg: "rgba(249,115,22,0.16)", label: "Decaying" };
+// No solves, no practice and no drill reps means the pattern hasn't started, not
+// that it's decaying — labelling those "Critical" was alarm without information.
+const isUntouched = (h: HealthRow) =>
+  h.solvedCount === 0 && h.daysSincePractice === null && h.recognitionAttempts === 0;
+
+function band(h: HealthRow): { color: string; bg: string; label: string } {
+  if (isUntouched(h)) return { color: "#8a8a99", bg: "rgba(255,255,255,0.06)", label: "Not started" };
+  if (h.health >= 80) return { color: "#34d399", bg: "rgba(16,185,129,0.16)", label: "Healthy" };
+  if (h.health >= 60) return { color: "#fbbf24", bg: "rgba(245,158,11,0.16)", label: "Watch" };
+  if (h.health >= 40) return { color: "#fb923c", bg: "rgba(249,115,22,0.16)", label: "Decaying" };
   return { color: "#f87171", bg: "rgba(239,68,68,0.16)", label: "Critical" };
 }
 
@@ -44,7 +50,8 @@ export function StatsClient({
   avgHealth: number;
   lastTestAt: string | null;
 }) {
-  const critical = health.filter((h) => h.health < 40).length;
+  const untouched = health.filter(isUntouched).length;
+  const critical = health.filter((h) => !isUntouched(h) && h.health < 40).length;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -68,7 +75,7 @@ export function StatsClient({
         <Tile icon={HeartPulse} label="Avg health" value={`${avgHealth}`} suffix="/100" color="#34d399" />
         <Tile icon={Zap} label="Recognition 30d" value={recognition.accuracy !== null ? `${recognition.accuracy}` : "—"} suffix={recognition.accuracy !== null ? "%" : ""} color="#a855f7" sub={`${recognition.total} reps`} />
         <Tile icon={Shuffle} label="Interleaved 30d" value={testAccuracy !== null ? `${testAccuracy}` : "—"} suffix={testAccuracy !== null ? "%" : ""} color="#38bdf8" sub={lastTestAt ? formatDistanceToNow(new Date(lastTestAt), { addSuffix: true }) : "never taken"} />
-        <Tile icon={Activity} label="Critical patterns" value={`${critical}`} color={critical > 0 ? "#f87171" : "#34d399"} sub="below 40" />
+        <Tile icon={Activity} label="Critical patterns" value={`${critical}`} color={critical > 0 ? "#f87171" : "#34d399"} sub={`below 40 · ${untouched} not started`} />
       </div>
 
       {/* Health table */}
@@ -76,7 +83,7 @@ export function StatsClient({
         <h2 className="text-lg font-bold mb-3">Every pattern, weakest first</h2>
         <div className="space-y-2">
           {health.map((h) => {
-            const b = band(h.health);
+            const b = band(h);
             return (
               <div key={h.id} className="section-card p-4">
                 <div className="flex items-center gap-3 mb-2.5">
