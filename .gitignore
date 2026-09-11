@@ -49,3 +49,7 @@ scripts/data-snapshot.json
 # IDE
 .vscode/
 .idea/
+
+# browser verification harness (drive/) — deps and screenshots stay local
+drive/node_modules/
+drive/shots/
