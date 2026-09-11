@@ -213,8 +213,8 @@ export function DailyMission({
                     {emptyLabel}
                   </span>
                 ) : (
-                  <span className="text-xs font-mono text-[var(--color-text-muted)] shrink-0 w-24 text-right">
-                    <span style={{ color: t.color }}>{Math.round(pct)}%</span>
+                  <span className="text-xs font-mono text-[var(--color-text-muted)] shrink-0 w-28 text-right">
+                    <span style={{ color: t.color }}>{t.done}</span>
                     <span className="opacity-60">
                       {" "}
                       / {t.target} {t.unit}

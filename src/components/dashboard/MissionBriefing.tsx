@@ -122,7 +122,9 @@ export function MissionBriefing(props: MissionBriefingProps) {
           subtext={
             longestStreak > currentStreak
               ? `Best: ${longestStreak}d`
-              : "Personal best!"
+              : currentStreak > 0
+              ? "Personal best!"
+              : "Solve a problem to start one"
           }
           color="var(--color-accent-amber)"
         />
@@ -133,7 +135,9 @@ export function MissionBriefing(props: MissionBriefingProps) {
           subtext={
             problemsPerDay > 0
               ? `${problemsPerDay.toFixed(1)}/day observed · target-aware`
-              : "Set a target to project"
+              : projectedDate === "Not enough data"
+              ? "Set a daily target to project"
+              : "At your daily target pace"
           }
           color="var(--color-accent-blue)"
         />
