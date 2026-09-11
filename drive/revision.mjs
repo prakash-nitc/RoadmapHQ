@@ -1,11 +1,11 @@
 // Revision: the recognition drill loads, answering a rep advances it, and a
 // finished drill's score survives a reload; a pattern practiced from the queue
-// moves and stays moved.
+// moves and stays moved; a pattern queued by solving reads Scheduled, not Solid.
 
 import { readFileSync } from 'node:fs';
 import { open, checker } from './lib.mjs';
 import {
-  url, mainText, waitForMain, settle, shoot, BROKEN_VALUE, matchCheck,
+  url, mainText, waitForMain, settle, shoot, BROKEN_VALUE, escapeRe, matchCheck,
   seedTestDb, assertSeededLocalDb,
 } from './support.mjs';
 
@@ -14,9 +14,10 @@ const PATTERNS = [...readFileSync(new URL('../prisma/seed-data/patterns.ts', imp
   .matchAll(/name: "([^"]+)"/g)].map((m) => m[1]);
 const REPS = 10; // the shortest drill the setup screen offers
 const PRACTICE = 'Two Pointers';
+const SOLVE = { title: 'Start of LinkedList Cycle', pattern: 'Fast & Slow Pointers' };
 const BANDS = ['OA-ready recognition', 'Functional, but slow', 'This is your bottleneck', 'Run a repair sprint'];
 const bandFor = (acc) => (acc >= 85 ? BANDS[0] : acc >= 65 ? BANDS[1] : acc >= 45 ? BANDS[2] : BANDS[3]);
-const STATUSES = ['Not started', 'Due', 'Shaky', 'Solid'];
+const STATUSES = ['Not started', 'Scheduled', 'Due', 'Shaky', 'Solid'];
 const COUNTS = /(\d+) solid · (\d+) shaky · (\d+) due/;
 const FEEDBACK = /^(Correct|Not quite|Time's up)$/m;
 const counterRe = (i) => new RegExp(`(^|\\s)${i} / ${REPS}(\\s|$)`);
@@ -40,6 +41,7 @@ const chipOf = async (name) => {
   const lines = (await patternRow(name).innerText()).split('\n').map((l) => l.trim());
   return STATUSES.find((s) => lines.some((l) => l === s || l.startsWith(`${s} ·`)));
 };
+const queue = async (name) => ({ counts: (await mainText(page)).match(COUNTS)?.slice(1), chip: await chipOf(name) });
 const startDrill = async () => {
   await page.goto(url('revision/drill'));
   await waitForMain(page, /how many reps\?/i);
@@ -135,14 +137,27 @@ try {
   await button('Done').click();
   await waitForMain(page, /1 solid · 0 shaky · 0 due/);
 
-  const queue = async () => ({ counts: (await mainText(page)).match(COUNTS)?.slice(1), chip: await chipOf(PRACTICE) });
-  const moved = await queue();
+  const moved = await queue(PRACTICE);
   check('practicing moves the pattern to Solid', moved, { counts: ['1', '0', '0'], chip: 'Solid' });
   await shoot(page, 'revision-5-queue-after-practice');
   await page.reload();
   await waitForMain(page, /Choose a pattern to revise/);
-  check('the move survives a reload', await queue(), moved);
+  check('the move survives a reload', await queue(PRACTICE), moved);
   check('no NaN / undefined / Invalid Date', BROKEN_VALUE.test(await mainText(page)), false);
+
+  console.log('  -- a pattern queued by solving reads Scheduled, not Solid');
+  await page.goto(url('problems'));
+  await waitForMain(page, /across\s+[1-9]\d*\s+problems/i);
+  await page.getByRole('row', { name: new RegExp(escapeRe(SOLVE.title)) }).getByRole('combobox').selectOption({ label: 'Solved' });
+  await waitForMain(page, /solved\s+1\s+remaining/i);
+  await page.goto(url('revision'));
+  await waitForMain(page, /Choose a pattern to revise/);
+  const queued = await queue(SOLVE.pattern);
+  check(`solving queues "${SOLVE.pattern}" as Scheduled without counting it solid`, queued, { counts: ['1', '0', '0'], chip: 'Scheduled' });
+  await shoot(page, 'revision-6-scheduled-by-solve');
+  await page.reload();
+  await waitForMain(page, /Choose a pattern to revise/);
+  check('Scheduled survives a reload', await queue(SOLVE.pattern), queued);
 } catch (e) {
   aborted = true;
   console.log(`!! SUITE ABORTED: ${e.message}`);

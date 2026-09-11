@@ -540,12 +540,14 @@ export async function updateProblemStatus(
       select: { revStep: true },
     });
     if (pat && pat.revStep === 0) {
+      // Schedule the first practice for tomorrow. revLastDoneAt stays null:
+      // solving a problem is not practicing the pattern, so the Revision Corner
+      // shows "Scheduled" rather than "Solid" until it has been practiced.
       await prisma.pattern.update({
         where: { id: problem.patternId },
         data: {
           revStep: 1,
           revNextDueAt: new Date(Date.now() + 1 * 86400000),
-          revLastDoneAt: new Date(),
         },
       });
     }

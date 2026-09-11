@@ -471,11 +471,15 @@ export async function getPatternPracticeData() {
 
   const mapped = patterns.map((p) => {
     const isDue = p.revStep >= 1 && !!p.revNextDueAt && p.revNextDueAt <= endOfToday;
-    const status: "due" | "shaky" | "solid" | "unstarted" =
+    // "scheduled": queued by a first solve but never practiced — calling that
+    // "solid" would claim retention that hasn't been tested yet.
+    const status: "due" | "shaky" | "solid" | "scheduled" | "unstarted" =
       p.revStep === 0
         ? "unstarted"
         : isDue
         ? "due"
+        : p.revLastDoneAt === null
+        ? "scheduled"
         : p.revFailCount > 0
         ? "shaky"
         : "solid";

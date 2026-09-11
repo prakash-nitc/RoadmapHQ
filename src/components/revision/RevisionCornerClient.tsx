@@ -40,7 +40,7 @@ interface PPattern {
   propeersSub: string | null;
   notesHint: string | null;
   isDue: boolean;
-  status: "due" | "shaky" | "solid" | "unstarted";
+  status: "due" | "shaky" | "solid" | "scheduled" | "unstarted";
   nextDueAt: string | Date | null;
   daysOverdue: number;
   core: CoreProblem[];
@@ -63,6 +63,7 @@ const STATUS_STYLE: Record<PPattern["status"], { label: string; color: string; b
   due: { label: "Due", color: "#22d3ee", bg: "rgba(34,211,238,0.16)" },
   shaky: { label: "Shaky", color: "#fbbf24", bg: "rgba(245,158,11,0.14)" },
   solid: { label: "Solid", color: "#34d399", bg: "rgba(16,185,129,0.14)" },
+  scheduled: { label: "Scheduled", color: "#7ba9ff", bg: "rgba(79,140,255,0.14)" },
   unstarted: { label: "Not started", color: "#6b6b7a", bg: "rgba(255,255,255,0.05)" },
 };
 
