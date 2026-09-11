@@ -1,4 +1,5 @@
-// Problems: the list renders, filtering works, marking a problem solved persists.
+// Problems: the list renders, filtering works without distorting overall
+// progress, and marking a problem solved persists.
 
 import { readFileSync } from 'node:fs';
 import { open, checker } from './lib.mjs';
@@ -41,8 +42,12 @@ const row = (title) => page.getByRole('row', { name: new RegExp(escapeRe(title))
 const statusOf = (title) => row(title).getByRole('combobox').evaluate((s) => s.selectedOptions[0].textContent);
 const columnText = (col) => table().evaluate((t, c) => [...t.tBodies[0].rows].map((r) => r.cells[c].innerText.trim()), col);
 const rowCount = () => table().evaluate((t) => t.tBodies[0].rows.length);
+const waitForRows = (n) => page.waitForFunction((count) => document.querySelector('table')?.tBodies[0].rows.length === count, n);
 const chip = async () => (await mainText(page)).match(/solved\s+\d+\s+remaining\s+\d+/i)?.[0].replace(/\s+/g, ' ').toLowerCase();
-const listSize = (n) => new RegExp(`across\\s+${n}\\s+problems?`, 'i');
+// The header always names the whole set; filters add "· showing N".
+const header = async () => (await mainText(page)).match(/Curated set across[^\n]*/)?.[0];
+const wholeSet = `Curated set across ${total} problems`;
+const showing = (n) => `${wholeSet} · showing ${n}`;
 
 try {
   await assertSeededLocalDb(page, total);
@@ -59,7 +64,7 @@ try {
 
   console.log('  -- list renders');
   let text = await mainText(page);
-  check('header counts every seeded problem', text.match(/across\s+(\d+)\s+problems/i)?.[1], String(total));
+  check('header names the whole set, with no "showing" count', await header(), wholeSet);
   check('progress chip starts at zero', await chip(), `solved 0 remaining ${total}`);
   check('one table row per seeded problem', await rowCount(), total);
   check(`"${FIXTURE}" is listed exactly once`, await row(FIXTURE).count(), 1);
@@ -73,25 +78,28 @@ try {
   const search = page.getByPlaceholder('Search problems...');
 
   await difficulty.selectOption('HARD');
-  await waitForMain(page, listSize(hard.length));
+  await waitForRows(hard.length);
   const diffs = await columnText(diffCol);
   check(`Hard filter shows the ${hard.length} Hard problems in the seed`, diffs.length, hard.length);
   check('every row under the Hard filter reads HARD', [...new Set(diffs)], ['HARD']);
+  check('header keeps the whole set and adds the count shown', await header(), showing(hard.length));
+  check('a filter does not change overall progress', await chip(), `solved 0 remaining ${total}`);
   await shoot(page, 'problems-2-hard-filter');
 
   await search.fill('substring');
-  await page.waitForFunction((n) => document.querySelector('table').tBodies[0].rows.length === n, hardSubstring.length);
+  await waitForRows(hardSubstring.length);
   check('search narrows within the filter', (await columnText(titleCol)).map((t) => t.split('\n')[0]).sort(),
     hardSubstring.map((p) => p.title).sort());
+  check('the "showing" count follows the search too', await header(), showing(hardSubstring.length));
 
   await search.fill('zz-no-such-problem');
   await waitForMain(page, /No problems match your filters\./);
-  check('a search with no match shows the empty state', await rowCount(), 0);
+  check('a search with no match shows the empty state', [await rowCount(), await header()], [0, showing(0)]);
 
   await search.fill('');
   await difficulty.selectOption('');
-  await waitForMain(page, listSize(total));
-  check('clearing the filters restores the full list', await rowCount(), total);
+  await waitForRows(total);
+  check('clearing the filters restores the full list and header', [await rowCount(), await header()], [total, wholeSet]);
 
   console.log('  -- marking a problem solved');
   await row(FIXTURE).getByRole('combobox').selectOption({ label: 'Solved' });
@@ -100,20 +108,23 @@ try {
   check(`"${FIXTURE}" now reads Solved at the 30% solved rung`, [await statusOf(FIXTURE), await masteryOf(FIXTURE)], ['Solved', '30%']);
 
   await status.selectOption('SOLVED');
-  await waitForMain(page, listSize(1));
+  await waitForRows(1);
   check('the Solved filter returns exactly that problem', (await columnText(titleCol)).map((t) => t.split('\n')[0]), [FIXTURE]);
+  check('under the Solved filter the chip still counts the whole set', await chip(), `solved 1 remaining ${total - 1}`);
+  check('and the header still names the whole set', await header(), showing(1));
   await shoot(page, 'problems-3-solved-filter');
   await status.selectOption('');
-  await waitForMain(page, listSize(total));
+  await waitForRows(total);
 
   console.log('  -- the solve survives a reload');
   const snapshot = async () => ({ chip: await chip(), status: await statusOf(FIXTURE), mastery: await masteryOf(FIXTURE) });
   const before = await snapshot();
   await page.reload();
-  await waitForMain(page, listSize(total));
+  await waitForMain(page, /across\s+[1-9]\d*\s+problems/i);
+  await waitForRows(total);
   check('chip, status and mastery are unchanged after reload', await snapshot(), before);
   text = await mainText(page);
-  matchCheck(check, 'filters are back to their defaults after reload', text, listSize(total));
+  matchCheck(check, 'filters are back to their defaults after reload', text, new RegExp(`${escapeRe(wholeSet)}\\s*\\n`));
   check('no NaN / undefined / Invalid Date after reload', BROKEN_VALUE.test(text), false);
   await shoot(page, 'problems-4-after-reload');
 } catch (e) {

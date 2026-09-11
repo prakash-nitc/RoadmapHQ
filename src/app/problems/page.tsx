@@ -32,9 +32,14 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "MASTERED", label: "Mastered" },
 ];
 
+const SOLVED_STATUSES = ["SOLVED", "REVISED", "MASTERED"];
+
 export default function ProblemsPage() {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [patterns, setPatterns] = useState<PatternOption[]>([]);
+  // Progress across the whole set. The list below is filtered; these numbers
+  // must not be, or a "Solved" filter reads as "0 remaining".
+  const [totals, setTotals] = useState({ total: 0, solved: 0 });
   const [search, setSearch] = useState("");
   const [filterPattern, setFilterPattern] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -57,11 +62,17 @@ export default function ProblemsPage() {
     ]);
     setProblems(probs as unknown as Problem[]);
     setPatterns(pats.map((p) => ({ id: p.id, name: p.name })));
+    const all = pats.flatMap((p) => p.problems);
+    setTotals({
+      total: all.length,
+      solved: all.filter((pr) => SOLVED_STATUSES.includes(pr.status)).length,
+    });
   }
 
   const filteredProblems = problems.filter((p) =>
     p.title.toLowerCase().includes(search.toLowerCase())
   );
+  const isFiltered = Boolean(filterPattern || filterStatus || filterDifficulty || search);
 
   const handleStatus = (id: string, status: string) => {
     startTransition(async () => {
@@ -69,8 +80,6 @@ export default function ProblemsPage() {
       await loadData();
     });
   };
-
-  const solved = problems.filter((p) => ["SOLVED", "REVISED", "MASTERED"].includes(p.status)).length;
 
   const getDifficultyColor = (d: string | null) => {
     switch (d) {
@@ -92,22 +101,28 @@ export default function ProblemsPage() {
           </p>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Problems</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-1.5">
-            Curated set across {/* */}
-            <span className="font-medium text-[var(--color-text-primary)]">{problems.length}</span>{" "}
-            {problems.length === 1 ? "problem" : "problems"}
+            Curated set across{" "}
+            <span className="font-medium text-[var(--color-text-primary)]">{totals.total}</span>{" "}
+            {totals.total === 1 ? "problem" : "problems"}
+            {isFiltered && (
+              <>
+                {" "}· showing{" "}
+                <span className="font-medium text-[var(--color-text-primary)]">{filteredProblems.length}</span>
+              </>
+            )}
           </p>
         </div>
 
-        {/* Progress chip */}
+        {/* Progress chip — always the whole set, whatever the filters */}
         <div className="section-card px-5 py-3 flex items-center gap-5">
           <div className="text-center">
             <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Solved</p>
-            <p className="text-xl font-bold font-mono text-[var(--color-accent-emerald)]">{solved}</p>
+            <p className="text-xl font-bold font-mono text-[var(--color-accent-emerald)]">{totals.solved}</p>
           </div>
           <div className="h-8 w-px bg-[var(--color-border)]" />
           <div className="text-center">
             <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Remaining</p>
-            <p className="text-xl font-bold font-mono text-[var(--color-accent-amber)]">{problems.length - solved}</p>
+            <p className="text-xl font-bold font-mono text-[var(--color-accent-amber)]">{totals.total - totals.solved}</p>
           </div>
         </div>
       </div>
