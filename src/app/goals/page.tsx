@@ -17,65 +17,58 @@ import {
 } from "@/lib/actions";
 import { RealityCheck } from "@/components/goals/RealityCheck";
 
+type DashData = ReturnType<typeof pickDashData>;
+
+// The slice of the dashboard data this page shows.
+function pickDashData(dash: Awaited<ReturnType<typeof getDashboardData>>) {
+  return {
+    totalProblems: dash.totalProblems,
+    solvedProblems: dash.solvedProblems,
+    totalVideos: dash.totalVideos,
+    watchedVideos: dash.watchedVideos,
+    problemsPerDay: dash.problemsPerDay,
+    projectedDate: dash.projectedDate,
+    paceOnlyDate: dash.paceOnlyDate,
+    paceWindow: dash.paceWindow,
+    targetPerDay: dash.targetPerDay,
+    placementCountdown: dash.placementCountdown,
+  };
+}
+
 export default function GoalsPage() {
   const [targetDate, setTargetDate] = useState("");
   const [dailyVideos, setDailyVideos] = useState(2);
   const [dailyProblems, setDailyProblems] = useState(3);
   const [dailyStudyMins, setDailyStudyMins] = useState(120);
-  const [dashData, setDashData] = useState<{
-    totalProblems: number;
-    solvedProblems: number;
-    totalVideos: number;
-    watchedVideos: number;
-    problemsPerDay: number;
-    projectedDate: string;
-    paceOnlyDate: string | null;
-    paceWindow: number;
-    targetPerDay: number;
-    placementCountdown: {
-      daysRemaining: number | null;
-      isSet: boolean;
-      baseline: number;
-      projectedAtCurrentPace: number;
-      projectedAtTargetPace: number;
-      neededPerDay: number;
-      verdict: "on-track" | "hit-target" | "behind" | "no-date";
-    };
-  } | null>(null);
+  const [dashData, setDashData] = useState<DashData | null>(null);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const router = useRouter();
+  // "Now" as of this visit, read once so the countdown can't shift between renders.
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
-    const [settings, dash] = await Promise.all([
-      getSettings(),
-      getDashboardData(),
-    ]);
-    if (settings) {
-      setDailyVideos(settings.dailyTargetVideos);
-      setDailyProblems(settings.dailyTargetProblems);
-      setDailyStudyMins(settings.dailyTargetStudyMins);
-      if (settings.targetDate) {
-        setTargetDate(settings.targetDate.toISOString().split("T")[0]);
+    let cancelled = false;
+    (async () => {
+      const [settings, dash] = await Promise.all([
+        getSettings(),
+        getDashboardData(),
+      ]);
+      if (cancelled) return;
+      if (settings) {
+        setDailyVideos(settings.dailyTargetVideos);
+        setDailyProblems(settings.dailyTargetProblems);
+        setDailyStudyMins(settings.dailyTargetStudyMins);
+        if (settings.targetDate) {
+          setTargetDate(settings.targetDate.toISOString().split("T")[0]);
+        }
       }
-    }
-    setDashData({
-      totalProblems: dash.totalProblems,
-      solvedProblems: dash.solvedProblems,
-      totalVideos: dash.totalVideos,
-      watchedVideos: dash.watchedVideos,
-      problemsPerDay: dash.problemsPerDay,
-      projectedDate: dash.projectedDate,
-      paceOnlyDate: dash.paceOnlyDate,
-      paceWindow: dash.paceWindow,
-      targetPerDay: dash.targetPerDay,
-      placementCountdown: dash.placementCountdown,
-    });
-  }
+      setDashData(pickDashData(dash));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSave = () => {
     startTransition(async () => {
@@ -85,6 +78,9 @@ export default function GoalsPage() {
         dailyTargetProblems: dailyProblems,
         dailyTargetStudyMins: dailyStudyMins,
       });
+      // The pace cards and reality check were computed from the old settings;
+      // reload them so they match what was just saved.
+      setDashData(pickDashData(await getDashboardData()));
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       router.refresh();
@@ -101,7 +97,7 @@ export default function GoalsPage() {
     ? Math.max(
         1,
         Math.ceil(
-          (new Date(targetDate).getTime() - Date.now()) / 86400000
+          (new Date(targetDate).getTime() - now) / 86400000
         )
       )
     : null;
