@@ -342,6 +342,7 @@ export async function getDashboardData() {
           completedProblems: todayLog.completedProblems,
           completedStudyMins: todayLog.completedStudyMins,
           missionScore: todayLog.missionScore,
+          isStudyDay: todayLog.isStudyDay,
         }
       : null,
   };

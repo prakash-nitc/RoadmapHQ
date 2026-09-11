@@ -62,10 +62,10 @@ export default async function Dashboard() {
         targetProblems={data.todayLog?.targetProblems ?? 3}
       />
 
-      {/* Late-day streak warning — appears 8pm+ if not done */}
+      {/* Late-day streak warning — appears 8pm+ while today doesn't count yet */}
       <StreakWarning
         currentStreak={data.currentStreak}
-        missionComplete={data.missionComplete}
+        studiedToday={data.todayLog?.isStudyDay ?? false}
       />
 
       {/* Tomorrow preview — surfaces when today is fully done */}

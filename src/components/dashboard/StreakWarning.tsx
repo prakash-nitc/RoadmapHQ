@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { AlertTriangle, Clock } from "lucide-react";
 
 interface StreakWarningProps {
   currentStreak: number;
-  missionComplete: boolean;
+  // Today already counts toward the streak (a problem solved, or 30+ study minutes).
+  studiedToday: boolean;
 }
 
 // Tiers of urgency based on local hour. 0 = no warning yet.
@@ -27,22 +28,28 @@ function timeRemaining(now: Date): string {
   return `${m}m`;
 }
 
+// A clock that ticks once a minute, read as an external store: null during the
+// server render and hydration (so the markup matches), the current minute after.
+function subscribeToMinute(onTick: () => void) {
+  const id = setInterval(onTick, 60_000);
+  return () => clearInterval(id);
+}
+const currentMinute = () => Math.floor(Date.now() / 60_000) * 60_000;
+const noClockOnServer = () => null;
+
 export function StreakWarning({
   currentStreak,
-  missionComplete,
+  studiedToday,
 }: StreakWarningProps) {
-  const [now, setNow] = useState<Date | null>(null);
+  const minute = useSyncExternalStore(subscribeToMinute, currentMinute, noClockOnServer);
 
-  useEffect(() => {
-    setNow(new Date());
-    const tick = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(tick);
-  }, []);
-
-  if (!now) return null;
-  if (missionComplete) return null;
+  if (minute === null) return null;
+  // Once today counts, the streak is safe until tomorrow — nothing to warn about,
+  // even while the rest of today's mission is still open.
+  if (studiedToday) return null;
   if (currentStreak < 1) return null;
 
+  const now = new Date(minute);
   const urgency = urgencyFor(now.getHours(), now.getMinutes());
   if (urgency === 0) return null;
 
@@ -93,7 +100,7 @@ export function StreakWarning({
           {currentStreak}-day streak alive
         </p>
         <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-          Finish today&apos;s mission below before midnight to bank day {currentStreak + 1}.
+          Solve one problem before midnight to bank day {currentStreak + 1}.
         </p>
       </div>
     </div>
