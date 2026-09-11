@@ -1,6 +1,8 @@
-// Revision: the recognition drill loads, answering a rep advances it, and a
-// finished drill's score survives a reload; a pattern practiced from the queue
-// moves and stays moved; a pattern queued by solving reads Scheduled, not Solid.
+// Revision: the recognition drill loads, its per-rep clock counts down, stops on
+// an answer and restarts on the next rep, and a finished drill's score survives a
+// reload; a pattern practiced from the queue moves and stays moved; a pattern
+// queued by solving reads Scheduled, not Solid; the weekly interleaved test is
+// DUE until taken, and taking it clears that and persists.
 
 import { readFileSync } from 'node:fs';
 import { open, checker } from './lib.mjs';
@@ -13,6 +15,8 @@ import {
 const PATTERNS = [...readFileSync(new URL('../prisma/seed-data/patterns.ts', import.meta.url), 'utf8')
   .matchAll(/name: "([^"]+)"/g)].map((m) => m[1]);
 const REPS = 10; // the shortest drill the setup screen offers
+const PER_REP_SECONDS = 60;
+const TEST_SIZE = 10;
 const PRACTICE = 'Two Pointers';
 const SOLVE = { title: 'Start of LinkedList Cycle', pattern: 'Fast & Slow Pointers' };
 const BANDS = ['OA-ready recognition', 'Functional, but slow', 'This is your bottleneck', 'Run a repair sprint'];
@@ -20,7 +24,7 @@ const bandFor = (acc) => (acc >= 85 ? BANDS[0] : acc >= 65 ? BANDS[1] : acc >= 4
 const STATUSES = ['Not started', 'Scheduled', 'Due', 'Shaky', 'Solid'];
 const COUNTS = /(\d+) solid · (\d+) shaky · (\d+) due/;
 const FEEDBACK = /^(Correct|Not quite|Time's up)$/m;
-const counterRe = (i) => new RegExp(`(^|\\s)${i} / ${REPS}(\\s|$)`);
+const counterRe = (i, of = REPS) => new RegExp(`(^|\\s)${i} / ${of}(\\s|$)`);
 
 console.log('== revision');
 const total = seedTestDb();
@@ -36,12 +40,18 @@ const button = (name) => inMain.getByRole('button', { name, exact: true });
 const choices = async () => (await inMain.getByRole('button').allInnerTexts())
   .map((s) => s.trim()).filter((s) => PATTERNS.includes(s));
 const feedback = async () => (await mainText(page)).match(FEEDBACK)?.[1];
+// The drill clock sits beside the rep counter: "3 / 10  57s".
+const secondsLeft = async () => Number((await mainText(page)).match(new RegExp(`(^|\\s)\\d+ / ${REPS}\\s+(\\d+)s(\\s|$)`))?.[2]);
 const patternRow = (name) => page.locator(`[data-pattern-row="${name}"]`);
 const chipOf = async (name) => {
   const lines = (await patternRow(name).innerText()).split('\n').map((l) => l.trim());
   return STATUSES.find((s) => lines.some((l) => l === s || l.startsWith(`${s} ·`)));
 };
 const queue = async (name) => ({ counts: (await mainText(page)).match(COUNTS)?.slice(1), chip: await chipOf(name) });
+const testCard = async () => {
+  const text = await mainText(page);
+  return { due: /Interleaved Test\s+DUE/.test(text), lastTaken: text.match(/Last taken ([A-Z][a-z]{2} \d{1,2}) →/)?.[1] ?? null };
+};
 const startDrill = async () => {
   await page.goto(url('revision/drill'));
   await waitForMain(page, /how many reps\?/i);
@@ -63,19 +73,27 @@ try {
   check('no NaN / undefined / Invalid Date', BROKEN_VALUE.test(text), false);
   await shoot(page, 'revision-1-drill-setup');
 
-  console.log('  -- drill: answering a rep advances it');
+  console.log('  -- drill: the clock runs, answering stops it, the next rep starts fresh');
   await startDrill();
   let opts = await choices();
   check('rep 1 offers four distinct real pattern names', [opts.length, new Set(opts).size], [4, 4]);
   check('no Next button before answering', await button('Next').count(), 0);
+  await page.waitForTimeout(2_500);
+  const ranFor = PER_REP_SECONDS - (await secondsLeft());
+  check('the 60s clock counts down (2–4s gone after 2.5s)', ranFor >= 2 && ranFor <= 4 ? 'counting' : ranFor, 'counting');
   await button(opts[0]).click();
   await waitForMain(page, FEEDBACK);
   check('answering gives Correct / Not quite feedback', ['Correct', 'Not quite'].includes(await feedback()), true);
   check('answering locks all four choices', await Promise.all(opts.map((o) => button(o).isDisabled())), [true, true, true, true]);
+  const stoppedAt = await secondsLeft();
+  await page.waitForTimeout(1_500);
+  check('answering stops the clock', await secondsLeft(), stoppedAt);
   await shoot(page, 'revision-2-drill-answered');
   await button('Next').click();
   await waitForMain(page, counterRe(2));
   check('Next moves to rep 2 with the feedback cleared', await feedback(), undefined);
+  const fresh = await secondsLeft();
+  check('rep 2 starts with a full 60s', fresh >= PER_REP_SECONDS - 1 ? 'full' : fresh, 'full');
 
   console.log('  -- drill: an abandoned drill is not recorded');
   await page.reload();
@@ -158,6 +176,41 @@ try {
   await page.reload();
   await waitForMain(page, /Choose a pattern to revise/);
   check('Scheduled survives a reload', await queue(SOLVE.pattern), queued);
+
+  console.log('  -- interleaved test: DUE until taken, then not');
+  check('a never-taken test is marked DUE and invites a first test', [await testCard(), /Take your first test →/.test(await mainText(page))], [{ due: true, lastTaken: null }, true]);
+  await page.goto(url('revision/test'));
+  await waitForMain(page, /Start test/);
+  text = await mainText(page);
+  matchCheck(check, 'the test page says it was never taken', text, /Last taken\s+Never/i);
+  matchCheck(check, 'and nudges a weekly test', text, /Take this once a week\./);
+  await settle(page);
+  await button('Start test').click();
+  for (let i = 1; i <= TEST_SIZE; i++) {
+    await waitForMain(page, counterRe(i, TEST_SIZE));
+    const picks = await choices();
+    if (picks.length !== 4) throw new Error(`test item ${i}: expected 4 pattern choices, got ${JSON.stringify(picks)}`);
+    await button(picks[0]).click();
+    await button(i < TEST_SIZE ? 'Next' : 'Submit test').click();
+  }
+  await waitForMain(page, /Interleaved score/i);
+  text = await mainText(page);
+  check('the score is out of all 10 items', text.match(/Interleaved score\s+\d+\/(\d+)/i)?.[1], String(TEST_SIZE));
+  check('no NaN / undefined / Invalid Date', BROKEN_VALUE.test(text), false);
+  await shoot(page, 'revision-7-test-score');
+
+  const takenOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); // "Sep 11"
+  await page.goto(url('revision'));
+  await waitForMain(page, /Choose a pattern to revise/);
+  check('once taken, the test is no longer DUE and shows the day', await testCard(), { due: false, lastTaken: takenOn });
+  await page.reload();
+  await waitForMain(page, /Choose a pattern to revise/);
+  check('that survives a reload', await testCard(), { due: false, lastTaken: takenOn });
+  await page.goto(url('revision/test'));
+  await waitForMain(page, /Start test/);
+  text = await mainText(page);
+  check('the test page drops the weekly nudge', /Take this once a week\./.test(text), false);
+  matchCheck(check, 'and says it was just taken', text, /Last taken\s+less than a minute ago/i);
 } catch (e) {
   aborted = true;
   console.log(`!! SUITE ABORTED: ${e.message}`);
