@@ -11,7 +11,7 @@
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "db:reset": "prisma db push --force-reset && prisma db seed",
+    "db:reset": "prisma db push --force-reset --skip-generate && prisma db seed",
     "setup": "prisma generate && prisma db push && prisma db seed",
     "deploy:export": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/export-local.ts",
     "deploy:schema": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/deploy-schema.ts",
