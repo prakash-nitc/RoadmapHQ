@@ -110,17 +110,10 @@ App-specific traps:
 - Once, every nested route (`/revision/*`, `/patterns/<id>`, `/api/*`) returned 404 on a
   long-running dev server while single-segment routes worked. It didn't reproduce on a
   fresh server; if it happens, restart `node serve.mjs`.
-
-## Known issue found by the harness (2026-09-11 — delete this section once fixed)
-
-`src/app/globals.css` has an **unlayered** `* { margin: 0; padding: 0; box-sizing: border-box; }`.
-Tailwind v4 emits utilities inside `@layer utilities`, and unlayered rules beat every
-layered rule, so **no `p-*`, `px-*`, `py-*`, `m-*`, `mt-*` or `space-y-*` class takes
-effect anywhere in the app** — measured in the browser: `py-3.5` and `p-5` compute to
-0px, and the production build CSS ships the same rule. `gap-*` and hand-written CSS are
-unaffected, which is why grids look fine and why the AppShell layout was rewritten in
-plain CSS. Tailwind's preflight already applies this reset inside `@layer base`, so the
-unlayered copy can simply be deleted. Until it is, screenshots look cramped by design.
+- Global CSS in `src/app/globals.css` that sets margin or padding must sit inside
+  `@layer base`. Tailwind v4 emits utilities in `@layer utilities`, and an unlayered rule
+  beats every layered one — an unlayered `* { margin: 0; padding: 0 }` once silently
+  disabled every `p-*`, `m-*` and `space-y-*` class in the app (removed 2026-09-11).
 
 ## The server-clock caveat
 

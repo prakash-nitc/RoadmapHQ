@@ -43,11 +43,9 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* No global `* { margin: 0; padding: 0 }` here: Tailwind's preflight already
+   resets inside @layer base, and an unlayered copy beats every layered rule —
+   it silently disabled all p-*, m-* and space-y-* utilities across the app. */
 
 /* Canvas color lives on html ONLY. body must stay transparent —
    an opaque body background paints over negative z-index layers,
