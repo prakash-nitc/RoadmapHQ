@@ -314,7 +314,7 @@ function PatternRow({ pattern: p, onPractice }: { pattern: PPattern; onPractice:
   const [open, setOpen] = useState(false);
   const s = STATUS_STYLE[p.status];
   return (
-    <div className="section-card overflow-hidden">
+    <div className="section-card overflow-hidden" data-pattern-row={p.name}>
       <div className="flex items-center gap-3 px-4 py-3.5">
         <span className="text-xs font-mono font-bold text-[var(--color-accent-purple)] shrink-0">
           #{String(p.order).padStart(2, "0")}
