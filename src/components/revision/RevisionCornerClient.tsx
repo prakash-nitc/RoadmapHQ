@@ -7,7 +7,6 @@ import { format } from "date-fns";
 import {
   Sparkles,
   ArrowRight,
-  CheckCircle2,
   Play,
   ExternalLink,
   ChevronDown,
@@ -71,13 +70,14 @@ export function RevisionCornerClient({
   data,
   recognition,
   lastTestAt,
+  testDue,
 }: {
   data: Data;
   recognition: Recognition;
   lastTestAt: string | null;
+  testDue: boolean; // decided on the server (getTestStatus)
 }) {
   const router = useRouter();
-  const testDue = !lastTestAt || Date.now() - new Date(lastTestAt).getTime() > 7 * 86400000;
   const [reviewSet, setReviewSet] = useState<PPattern[] | null>(null);
   const [propeersInput, setPropeersInput] = useState(data.propeersUrl ?? "");
   const [savingUrl, startSaveUrl] = useTransition();

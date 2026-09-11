@@ -1,23 +1,24 @@
 import {
   getPatternPracticeData,
   getRecognitionSummary,
-  getLastTestAt,
+  getTestStatus,
 } from "@/lib/revision-actions";
 import { RevisionCornerClient } from "@/components/revision/RevisionCornerClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function RevisionCornerPage() {
-  const [data, recognition, lastTestAt] = await Promise.all([
+  const [data, recognition, test] = await Promise.all([
     getPatternPracticeData(),
     getRecognitionSummary(),
-    getLastTestAt(),
+    getTestStatus(),
   ]);
   return (
     <RevisionCornerClient
       data={data}
       recognition={recognition}
-      lastTestAt={lastTestAt ? lastTestAt.toISOString() : null}
+      lastTestAt={test.lastTestAt ? test.lastTestAt.toISOString() : null}
+      testDue={test.due}
     />
   );
 }

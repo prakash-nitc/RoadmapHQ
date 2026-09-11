@@ -1,29 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, ArrowRight } from "lucide-react";
+import { useLocalStorage, writeLocalStorage } from "@/lib/use-local-storage";
 
 const DISMISSED_KEY = "dsa-weekly-review-dismissed";
 
+// Week-of-year key — once you dismiss this Sunday, no nag until next week.
+function weekKey(d: Date) {
+  const weeks = Math.floor(
+    (d.getTime() - new Date(d.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
+  );
+  return `${d.getFullYear()}-W${weeks}`;
+}
+
 // Sunday-only banner. Once dismissed for the week, stays hidden until next Sunday.
 export function WeeklyReviewBanner() {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const today = new Date();
-    if (today.getDay() !== 0) return; // 0 = Sunday in JS
-
-    // Use ISO week as dismissal key — once you dismiss this Sunday, no nag this week.
-    const key = `${today.getFullYear()}-W${Math.floor(
-      (today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) /
-        (7 * 24 * 60 * 60 * 1000)
-    )}`;
-    const dismissed = window.localStorage.getItem(DISMISSED_KEY);
-    if (dismissed === key) return;
-    setShow(true);
-  }, []);
+  const dismissed = useLocalStorage(DISMISSED_KEY);
+  const today = new Date();
+  const key = weekKey(today);
+  // dismissed is undefined until hydration, so the server renders nothing.
+  const show = dismissed !== undefined && today.getDay() === 0 && dismissed !== key;
 
   if (!show) return null;
 
@@ -62,16 +59,7 @@ export function WeeklyReviewBanner() {
           <ArrowRight className="w-3 h-3" />
         </Link>
         <button
-          onClick={() => {
-            const today = new Date();
-            const key = `${today.getFullYear()}-W${Math.floor(
-              (today.getTime() -
-                new Date(today.getFullYear(), 0, 1).getTime()) /
-                (7 * 24 * 60 * 60 * 1000)
-            )}`;
-            window.localStorage.setItem(DISMISSED_KEY, key);
-            setShow(false);
-          }}
+          onClick={() => writeLocalStorage(DISMISSED_KEY, key)}
           className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] px-2"
         >
           Later

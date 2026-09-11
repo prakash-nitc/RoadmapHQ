@@ -27,7 +27,7 @@ async function main() {
   });
 
   let set = 0;
-  let stillMissing: string[] = [];
+  const stillMissing: string[] = [];
 
   for (const p of problems) {
     if (p.difficulty) continue; // never overwrite an existing label

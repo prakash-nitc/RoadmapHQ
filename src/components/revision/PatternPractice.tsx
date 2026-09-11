@@ -130,7 +130,7 @@ export function PatternPractice({
 
       {/* Step chips */}
       <div className="flex items-center gap-2 text-[11px]">
-        {(["refresh", "fresh", "core"] as Step[]).map((s, i) => {
+        {(["refresh", "fresh", "core"] as Step[]).map((s) => {
           const active = step === s;
           const labels = { refresh: "1 · Refresh", fresh: "2 · Fresh problems", core: "3 · Cold re-solve" } as Record<Step, string>;
           return (

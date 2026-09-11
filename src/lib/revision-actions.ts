@@ -759,6 +759,15 @@ export async function getLastTestAt(): Promise<Date | null> {
   return last?.createdAt ?? null;
 }
 
+// The weekly interleaved test is due when it has never been taken, or was last
+// taken more than 7 days ago. Decided here on the server, so pages don't read
+// the clock while rendering.
+export async function getTestStatus(): Promise<{ lastTestAt: Date | null; due: boolean }> {
+  const lastTestAt = await getLastTestAt();
+  const due = !lastTestAt || Date.now() - lastTestAt.getTime() > 7 * 86400000;
+  return { lastTestAt, due };
+}
+
 // ─── Pattern Health (spec §6.4, adapted) ───────────────────────
 // Health blends three honest signals we actually have:
 //   • mastery   — mean masteryScore across the pattern's problems (the

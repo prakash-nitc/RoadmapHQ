@@ -8,7 +8,6 @@ import {
   TrendingDown,
   Trophy,
   Target,
-  RotateCcw,
   Calendar,
   ArrowRight,
   Flame,

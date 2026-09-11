@@ -41,7 +41,13 @@ function fmtClock(sec: number) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function InterleavedTest({ lastTestAt }: { lastTestAt: string | null }) {
+export function InterleavedTest({
+  lastTestAt,
+  stale,
+}: {
+  lastTestAt: string | null;
+  stale: boolean; // due for this week's test — decided on the server (getTestStatus)
+}) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("intro");
   const [reps, setReps] = useState<DrillRep[]>([]);
@@ -114,7 +120,6 @@ export function InterleavedTest({ lastTestAt }: { lastTestAt: string | null }) {
 
   // ── INTRO ──
   if (phase === "intro" || phase === "loading") {
-    const stale = lastTestAt ? Date.now() - new Date(lastTestAt).getTime() > 7 * 86400000 : true;
     return (
       <div className="max-w-xl mx-auto space-y-6">
         <BackLink />

@@ -14,18 +14,21 @@ export default function JournalPage() {
   const dateStr = format(selectedDate, "EEEE, MMMM d, yyyy");
 
   useEffect(() => {
-    // Load existing entry for selected date
-    loadEntry();
+    // Load the saved entry for the selected date; ignore a response that arrives
+    // after the user has already moved to another date.
+    let cancelled = false;
+    fetch(`/api/journal?date=${format(selectedDate, "yyyy-MM-dd")}`)
+      .then(async (res) => {
+        const data = res.ok ? await res.json() : null;
+        if (cancelled) return;
+        if (data) setEntry(data.entry ?? "");
+        setSaved(false);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [selectedDate]);
-
-  async function loadEntry() {
-    const res = await fetch(`/api/journal?date=${format(selectedDate, "yyyy-MM-dd")}`);
-    if (res.ok) {
-      const data = await res.json();
-      setEntry(data.entry ?? "");
-    }
-    setSaved(false);
-  }
 
   const handleSave = () => {
     startTransition(async () => {

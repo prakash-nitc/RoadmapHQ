@@ -1,35 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, Rocket } from "lucide-react";
 import Link from "next/link";
 import { Sidebar } from "./Sidebar";
+import { useLocalStorage, writeLocalStorage } from "@/lib/use-local-storage";
 
 const COLLAPSE_KEY = "dsa-sidebar-collapsed";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
-  // Restore collapse preference after mount (avoids SSR mismatch).
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
-  }, []);
+  // The drawer remembers the page it was opened on, so navigating closes it
+  // without an effect that resets state.
+  const [drawerOpenOn, setDrawerOpenOn] = useState<string | null>(null);
+  const drawerOpen = drawerOpenOn === pathname;
+  const closeDrawer = () => setDrawerOpenOn(null);
 
-  const toggleCollapsed = () => {
-    setCollapsed((c) => {
-      const next = !c;
-      window.localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
-      return next;
-    });
-  };
-
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, [pathname]);
+  // Collapse preference lives in localStorage. It reads as undefined during the
+  // server render and hydration, which renders expanded, as before.
+  const collapsed = useLocalStorage(COLLAPSE_KEY) === "1";
+  const toggleCollapsed = () => writeLocalStorage(COLLAPSE_KEY, collapsed ? "0" : "1");
 
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? "hidden" : "";
@@ -58,14 +50,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile drawer — only rendered/visible below 768px */}
       <div className="app-mobile-drawer-root">
         {drawerOpen && (
-          <div className="drawer-backdrop" onClick={() => setDrawerOpen(false)} aria-hidden />
+          <div className="drawer-backdrop" onClick={closeDrawer} aria-hidden />
         )}
         <div
           className={`drawer-panel ${
             drawerOpen ? "drawer-panel-open" : "drawer-panel-closed"
           }`}
         >
-          <Sidebar onNavigate={() => setDrawerOpen(false)} />
+          <Sidebar onNavigate={closeDrawer} />
         </div>
       </div>
 
@@ -92,7 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           }}
         >
           <button
-            onClick={() => setDrawerOpen(true)}
+            onClick={() => setDrawerOpenOn(pathname)}
             className="p-2 -ml-2 rounded-lg hover:bg-[var(--color-bg-card)]"
             aria-label="Open menu"
           >

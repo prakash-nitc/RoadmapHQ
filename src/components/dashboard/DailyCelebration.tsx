@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { format } from "date-fns";
 import { X, Sparkles } from "lucide-react";
+import { useLocalStorage, writeLocalStorage } from "@/lib/use-local-storage";
 
 const QUOTES = [
   "One more day on the climb. The summit gets closer.",
@@ -21,30 +22,38 @@ const QUOTES = [
 
 const STORAGE_KEY = "dsa-celebrated-on";
 
+// Confetti geometry is random, but rolled once per page load rather than on every
+// render, so a re-render never reshuffles the falling pieces.
+const CONFETTI_COLORS = ["#22d3ee", "#a855f7", "#f59e0b", "#10b981", "#f472b6"];
+const CONFETTI = Array.from({ length: 36 }, (_, i) => ({
+  color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+  left: Math.random() * 100,
+  delay: Math.random() * 0.6,
+  duration: 2.4 + Math.random() * 1.4,
+  drift: (Math.random() - 0.5) * 200,
+  size: 6 + Math.random() * 8,
+}));
+
 interface DailyCelebrationProps {
   missionComplete: boolean;
 }
 
 export function DailyCelebration({ missionComplete }: DailyCelebrationProps) {
-  const [show, setShow] = useState(false);
-  const [quote, setQuote] = useState("");
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const celebratedOn = useLocalStorage(STORAGE_KEY);
+  // celebratedOn is undefined until hydration, so nothing renders on the server.
+  const show = missionComplete && celebratedOn !== undefined && celebratedOn !== todayKey;
+  // The same quote all day.
+  const quote = QUOTES[Number(todayKey.replaceAll("-", "")) % QUOTES.length];
 
+  const dismiss = () => writeLocalStorage(STORAGE_KEY, todayKey);
+
+  // Auto-dismiss after 8 seconds (the user can close it earlier).
   useEffect(() => {
-    if (!missionComplete) return;
-    const todayKey = format(new Date(), "yyyy-MM-dd");
-    if (typeof window === "undefined") return;
-    const last = window.localStorage.getItem(STORAGE_KEY);
-    if (last === todayKey) return;
-
-    // Pick a random quote and fire celebration once per day.
-    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
-    setShow(true);
-    window.localStorage.setItem(STORAGE_KEY, todayKey);
-
-    // Auto-dismiss after 8 seconds (user can close earlier).
-    const t = setTimeout(() => setShow(false), 8000);
+    if (!show) return;
+    const t = setTimeout(() => writeLocalStorage(STORAGE_KEY, todayKey), 8000);
     return () => clearTimeout(t);
-  }, [missionComplete]);
+  }, [show, todayKey]);
 
   if (!show) return null;
 
@@ -52,32 +61,23 @@ export function DailyCelebration({ missionComplete }: DailyCelebrationProps) {
     <>
       {/* Confetti layer */}
       <div className="fixed inset-0 pointer-events-none z-[80] overflow-hidden">
-        {Array.from({ length: 36 }).map((_, i) => {
-          const colors = ["#22d3ee", "#a855f7", "#f59e0b", "#10b981", "#f472b6"];
-          const color = colors[i % colors.length];
-          const left = Math.random() * 100;
-          const delay = Math.random() * 0.6;
-          const duration = 2.4 + Math.random() * 1.4;
-          const drift = (Math.random() - 0.5) * 200;
-          const size = 6 + Math.random() * 8;
-          return (
-            <span
-              key={i}
-              className="confetti-piece"
-              style={
-                {
-                  left: `${left}%`,
-                  width: size,
-                  height: size,
-                  background: color,
-                  animationDelay: `${delay}s`,
-                  animationDuration: `${duration}s`,
-                  ["--drift" as string]: `${drift}px`,
-                } as React.CSSProperties
-              }
-            />
-          );
-        })}
+        {CONFETTI.map((piece, i) => (
+          <span
+            key={i}
+            className="confetti-piece"
+            style={
+              {
+                left: `${piece.left}%`,
+                width: piece.size,
+                height: piece.size,
+                background: piece.color,
+                animationDelay: `${piece.delay}s`,
+                animationDuration: `${piece.duration}s`,
+                ["--drift" as string]: `${piece.drift}px`,
+              } as React.CSSProperties
+            }
+          />
+        ))}
       </div>
 
       {/* Centered toast */}
@@ -94,7 +94,7 @@ export function DailyCelebration({ missionComplete }: DailyCelebrationProps) {
           }}
         >
           <button
-            onClick={() => setShow(false)}
+            onClick={dismiss}
             className="absolute top-3 right-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
             aria-label="Dismiss"
           >

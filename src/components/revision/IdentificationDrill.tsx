@@ -78,11 +78,11 @@ export function IdentificationDrill() {
     [answered, idx, reps]
   );
 
-  // Start / reset the per-rep timer when a new rep appears.
+  // Run the per-rep timer while a rep is on screen. The countdown itself is put
+  // back to 60 by the handlers that show a new rep (startDrill, next).
   useEffect(() => {
     if (phase !== "running" || answered) return;
     startedAtRef.current = Date.now();
-    setSecondsLeft(PER_REP_SECONDS);
     clearTimer();
     timerRef.current = setInterval(() => {
       setSecondsLeft((s) => {
@@ -106,6 +106,7 @@ export function IdentificationDrill() {
     setResults([]);
     setPicked(null);
     setAnswered(false);
+    setSecondsLeft(PER_REP_SECONDS);
     setPhase("running");
   };
 
@@ -114,6 +115,7 @@ export function IdentificationDrill() {
       setIdx((i) => i + 1);
       setPicked(null);
       setAnswered(false);
+      setSecondsLeft(PER_REP_SECONDS);
     } else {
       clearTimer();
       // persist the whole run, then show the scorecard
