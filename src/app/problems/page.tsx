@@ -93,7 +93,8 @@ export default function ProblemsPage() {
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Problems</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-1.5">
             Curated set across {/* */}
-            <span className="font-medium text-[var(--color-text-primary)]">{problems.length}</span> problems
+            <span className="font-medium text-[var(--color-text-primary)]">{problems.length}</span>{" "}
+            {problems.length === 1 ? "problem" : "problems"}
           </p>
         </div>
 

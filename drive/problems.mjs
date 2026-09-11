@@ -42,7 +42,7 @@ const statusOf = (title) => row(title).getByRole('combobox').evaluate((s) => s.s
 const columnText = (col) => table().evaluate((t, c) => [...t.tBodies[0].rows].map((r) => r.cells[c].innerText.trim()), col);
 const rowCount = () => table().evaluate((t) => t.tBodies[0].rows.length);
 const chip = async () => (await mainText(page)).match(/solved\s+\d+\s+remaining\s+\d+/i)?.[0].replace(/\s+/g, ' ').toLowerCase();
-const listSize = (n) => new RegExp(`across\\s+${n}\\s+problems`, 'i');
+const listSize = (n) => new RegExp(`across\\s+${n}\\s+problems?`, 'i');
 
 try {
   await assertSeededLocalDb(page, total);

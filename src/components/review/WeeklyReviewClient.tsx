@@ -96,7 +96,7 @@ export function WeeklyReviewClient({ data }: { data: ReviewData }) {
             <p className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
               {data.problemsThis}{" "}
               <span className="text-[var(--color-text-secondary)] font-medium">
-                problems solved
+                {data.problemsThis === 1 ? "problem" : "problems"} solved
               </span>
             </p>
             <p className="text-sm text-[var(--color-text-secondary)] mt-1">
@@ -198,7 +198,7 @@ export function WeeklyReviewClient({ data }: { data: ReviewData }) {
                 {data.topPattern.name}
               </p>
               <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-                {data.topPattern.count} problems solved here this week
+                {data.topPattern.count} {data.topPattern.count === 1 ? "problem" : "problems"} solved here this week
               </p>
             </Link>
           ) : (
